@@ -145,7 +145,11 @@ class CustomerDetailsDialog(QDialog):
         QDialog.__init__(self)
         self.customer = None
         self.resize(280,160)
-        layout = QFormLayout()
+        meta_widget = QWidget()
+        meta_layout = QVBoxLayout()
+        meta_widget.setLayout(meta_layout)
+        
+        form_layout = QFormLayout()
         self.stacks = list()
         self.name_stack = QStackedWidget()
         self.email_stack = QStackedWidget()
@@ -154,6 +158,11 @@ class CustomerDetailsDialog(QDialog):
         self.locked_stack = QStackedWidget()
         self.comment_stack = QStackedWidget()
         self.button_stack = QStackedWidget()
+        button_container = QWidget()
+        button_container_layout = QHBoxLayout()
+        button_container_layout.addWidget(self.button_stack)
+        button_container_layout.addStretch()
+        button_container.setLayout(button_container_layout)
         self.stacks.append(self.name_stack)
         self.stacks.append(self.email_stack)
         self.stacks.append(self.room_stack)
@@ -189,20 +198,20 @@ class CustomerDetailsDialog(QDialog):
         self.comment_edit_field = QTextEdit()
         self.comment_stack.addWidget(self.comment_field)
         self.comment_stack.addWidget(self.comment_edit_field)
-        layout.addRow(QLabel('Name:'), self.name_stack)
-        layout.addRow(QLabel('Depts:'), self.depts_field)
-        layout.addRow(QLabel('EMail:'), self.email_stack)
-        layout.addRow(QLabel('Room-No:'), self.room_stack)
-        layout.addRow(QLabel('Team:'), self.team_stack)
-        layout.addRow(QLabel('Locked:'), self.locked_stack)
-        layout.addRow(QLabel('Comment:'), self.comment_stack)
-        edit_button = QPushButton('Edit')
-        save_button = QPushButton('Save')
+        form_layout.addRow(QLabel('Name:'), self.name_stack)
+        form_layout.addRow(QLabel('Depts:'), self.depts_field)
+        form_layout.addRow(QLabel('EMail:'), self.email_stack)
+        form_layout.addRow(QLabel('Room-No:'), self.room_stack)
+        form_layout.addRow(QLabel('Team:'), self.team_stack)
+        form_layout.addRow(QLabel('Locked:'), self.locked_stack)
+        form_layout.addRow(QLabel('Comment:'), self.comment_stack)
+        edit_button = QPushButton(QIcon('img/16x16/configure.png'), 'Edit')
+        save_button = QPushButton(QIcon('img/16x16/dialog-ok-apply.png'), 'Save')
         self.button_stack.addWidget(edit_button)
         self.button_stack.addWidget(save_button)
-        layout.addRow(QLabel('Edit:'), self.button_stack)
+        form_layout.addRow(QLabel('Edit:'), button_container)
         self.stats_image = StatsDialog(False)
-        layout.addWidget(self.stats_image)
+        
         button_box = QDialogButtonBox()
         
         ok_button = button_box.addButton(button_box.Ok)
@@ -210,8 +219,19 @@ class CustomerDetailsDialog(QDialog):
         self.connect(save_button, SIGNAL('clicked()'), self.save_edit)
         self.connect(ok_button, SIGNAL('clicked()'), self.ok_clicked)
         
-        layout.addWidget(button_box)
-        self.setLayout(layout)
+        
+        form_widget = QWidget()
+        form_widget.setLayout(form_layout)
+        form_container = QWidget()
+        form_container_layout = QHBoxLayout()
+        form_container_layout.addWidget(form_widget)
+        form_container_layout.addStretch()
+        form_container.setLayout(form_container_layout)
+        
+        meta_layout.addWidget(form_container)
+        meta_layout.addWidget(self.stats_image)
+        meta_layout.addWidget(button_box)
+        self.setLayout(meta_layout)
     def show_edit_fields(self):
         for stack in self.stacks:
             stack.setCurrentIndex(1)
@@ -276,6 +296,26 @@ class StatsDialog(QDialog):
         self.tabs = QTabWidget()
         self.stats_image = QLabel()
         self.tabs.addTab(self.stats_image, QIcon('img/32x32/view-investment.png'), 'Statistics')
+        self.list_container = QWidget()
+        list_layout = QVBoxLayout()
+        self.list_pager = QWidget()
+        pager_layout = QHBoxLayout()
+        self.page_num_label = QLabel()
+        first_button = QPushButton(QIcon('img/16x16/arrow-left-double.png'), '')
+        prev_button = QPushButton(QIcon('img/16x16/arrow-left.png'), '')
+        next_button = QPushButton(QIcon('img/16x16/arrow-right.png'), '')
+        last_button = QPushButton(QIcon('img/16x16/arrow-right.png'), '')
+        self.connect(prev_button, SIGNAL('clicked()'), self.prev_page)
+        self.connect(next_button, SIGNAL('clicked()'), self.next_page)
+        self.connect(first_button, SIGNAL('clicked()'), self.first_page)
+        self.connect(last_button, SIGNAL('clicked()'), self.last_page)
+        pager_layout.addStretch()
+        pager_layout.addWidget(first_button)
+        pager_layout.addWidget(prev_button)
+        pager_layout.addWidget(self.page_num_label)
+        pager_layout.addWidget(next_button)
+        pager_layout.addWidget(last_button)
+        pager_layout.addStretch()
         self.list_widget = QTableWidget()
         self.list_widget.insertColumn(0)
         self.list_widget.insertColumn(0)
@@ -285,7 +325,11 @@ class StatsDialog(QDialog):
         self.list_widget.setHorizontalHeaderItem(0, QTableWidgetItem('Name'))
         self.list_widget.setHorizontalHeaderItem(1, QTableWidgetItem('Price'))
         self.list_widget.setHorizontalHeaderItem(2, QTableWidgetItem('Time/Date'))
-        self.tabs.addTab(self.list_widget, QIcon('img/32x32/view-income-categories.png'), 'List')
+        self.list_pager.setLayout(pager_layout)
+        list_layout.addWidget(self.list_pager)
+        list_layout.addWidget(self.list_widget)
+        self.list_container.setLayout(list_layout)
+        self.tabs.addTab(self.list_container, QIcon('img/32x32/view-income-categories.png'), 'List')
         layout.addWidget(self.tabs)
         if self.standalone:
             button_box = QDialogButtonBox()
@@ -295,17 +339,44 @@ class StatsDialog(QDialog):
         self.setLayout(layout)
         
     def update(self, transactions, title):
+        self.transactions = transactions
+        self.page = 0
+        self.update_list(self.transactions)
+        renderPlot(self.transactions, title, '/home/zeratul/projects/plist-qt/')
+        self.stats_image.setPixmap(QPixmap.fromImage(QImage('/home/zeratul/projects/plist-qt/stats/' + title + '.svg')))
+    
+    def update_list(self, transactions):
+        self.transactions = transactions
         for i in range(self.list_widget.rowCount()):
             self.list_widget.removeRow(0)
         reverse_transactions = transactions.reverse()
+        self.page_num_label.setText(str(self.page+1) + '/' + str(len(transactions)/self.len_page+1))
         for idx, transaction in enumerate(transactions[self.page*self.len_page:(self.page+1)*self.len_page]):
             self.list_widget.insertRow(idx)
             self.list_widget.setCellWidget(idx, 0, QLabel(transaction.customer.name))
             self.list_widget.setCellWidget(idx, 1, QLabel(str(transaction.price) + ' EUR'))
             self.list_widget.setCellWidget(idx, 2, QLabel(transaction.time.strftime('%H:%M:%S, %d.%m.%Y')))
-        renderPlot(transactions, title, '/home/zeratul/projects/plist-qt/')
-        self.stats_image.setPixmap(QPixmap.fromImage(QImage('/home/zeratul/projects/plist-qt/stats/' + title + '.svg')))
+            
+    def first_page(self):
+        if self.page != 0:
+            self.page = 0
+            self.update_list(self.transactions)
+            
+    def prev_page(self):
+        if self.page > 0:
+            self.page -= 1
+            self.update_list(self.transactions)
         
+    def next_page(self):
+        if self.page < len(self.transactions)/self.len_page:
+            self.page += 1
+            self.update_list(self.transactions)
+            
+    def last_page(self):
+        if self.page != len(self.transactions)/self.len_page:
+            self.page = len(self.transactions)/self.len_page
+            self.update_list(self.transactions)
+            
     def ok_clicked(self):
         self.hide()
         
