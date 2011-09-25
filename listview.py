@@ -24,6 +24,8 @@ class MainWindow(QWidget):
         self.connect(self.toolbar.new_customer_dialog, SIGNAL('newCustomer()'), self.update)
         self.connect(self.p_men_box.table, SIGNAL('customerDeleted()'), self.update)
         self.connect(self.customer_box.table, SIGNAL('customerDeleted()'), self.update)
+        self.connect(self.p_men_box.details_dialog, SIGNAL('customerEdited()'), self.update)
+        self.connect(self.customer_box.details_dialog, SIGNAL('customerEdited()'), self.update)
         layout.addWidget(self.toolbar)
         layout.addWidget(self.p_men_box)
         layout.addWidget(self.customer_box)
@@ -43,7 +45,7 @@ class PlistToolbar(QToolBar):
         QToolBar.__init__(self)
         self.new_customer_dialog = NewCustomerDialog()
         self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        new_customer_action = QAction(QIcon('/home/zeratul/projects/plist-qt/img/list-add.png'), 'New customer',self)
+        new_customer_action = QAction(QIcon('/home/zeratul/projects/plist-qt/img/16x16/user-group-new.png'), 'New customer',self)
         self.connect(new_customer_action, SIGNAL('triggered()'), self.new_customer_dialog.show)
         self.addAction(new_customer_action)
         self.addAction('Statistics customer')
@@ -77,7 +79,6 @@ class NewCustomerDialog(QDialog):
         layout.addWidget(button_box)
         self.setLayout(layout)
 
-    
     def ok_clicked(self):
         weekday = date.today().weekday()
         last_sunday = date.today() - timedelta(weekday+1)
@@ -109,6 +110,116 @@ class NewCustomerDialog(QDialog):
         self.room_field.setText('')
         self.team_box.setCheckState(False)
         self.locked_box.setCheckState(False)
+
+class CustomerDetailsDialog(QDialog):
+    
+    def __init__(self):
+        QDialog.__init__(self)
+        self.customer = None
+        self.resize(280,160)
+        layout = QFormLayout()
+        self.stacks = list()
+        self.name_stack = QStackedWidget()
+        self.email_stack = QStackedWidget()
+        self.room_stack = QStackedWidget()
+        self.team_stack = QStackedWidget()
+        self.locked_stack = QStackedWidget()
+        self.button_stack = QStackedWidget()
+        self.stacks.append(self.name_stack)
+        self.stacks.append(self.email_stack)
+        self.stacks.append(self.room_stack)
+        self.stacks.append(self.team_stack)
+        self.stacks.append(self.locked_stack)
+        self.stacks.append(self.button_stack)
+        self.name_field = QLabel()
+        self.name_edit_field = QLineEdit()
+        self.name_stack.addWidget(self.name_field)
+        self.name_stack.addWidget(self.name_edit_field)
+        self.depts_field = DeptLabel()
+        
+        self.email_field = QLabel()
+        self.email_edit_field = QLineEdit()
+        self.email_stack.addWidget(self.email_field)
+        self.email_stack.addWidget(self.email_edit_field)
+        
+        self.room_field = QLabel()
+        self.room_edit_field = QLineEdit()
+        self.room_stack.addWidget(self.room_field)
+        self.room_stack.addWidget(self.room_edit_field)
+        
+        self.team_label = QLabel()
+        self.team_box = QCheckBox()
+        self.team_stack.addWidget(self.team_label)
+        self.team_stack.addWidget(self.team_box)
+        self.locked_label = QLabel()
+        self.locked_box = QCheckBox()
+        self.locked_stack.addWidget(self.locked_label)
+        self.locked_stack.addWidget(self.locked_box)
+        layout.addRow(QLabel('Name:'), self.name_stack)
+        layout.addRow(QLabel('Depts:'), self.depts_field)
+        layout.addRow(QLabel('EMail:'), self.email_stack)
+        layout.addRow(QLabel('Room-No:'), self.room_stack)
+        layout.addRow(QLabel('Team:'), self.team_stack)
+        layout.addRow(QLabel('Locked:'), self.locked_stack)
+        edit_button = QPushButton('Edit')
+        save_button = QPushButton('Save')
+        self.button_stack.addWidget(edit_button)
+        self.button_stack.addWidget(save_button)
+        layout.addRow(QLabel('Edit:'), self.button_stack)
+        button_box = QDialogButtonBox()
+        
+        ok_button = button_box.addButton(button_box.Ok)
+        self.connect(edit_button, SIGNAL('clicked()'), self.show_edit_fields)
+        self.connect(save_button, SIGNAL('clicked()'), self.save_edit)
+        self.connect(ok_button, SIGNAL('clicked()'), self.ok_clicked)
+        
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+    def show_edit_fields(self):
+        for stack in self.stacks:
+            stack.setCurrentIndex(1)
+    def save_edit(self):
+        self.customer.name = self.name_edit_field.text()
+        self.customer.email = self.email_edit_field.text()
+        self.customer.room = self.room_edit_field.text()
+        self.customer.isPuente = self.team_box.isChecked()
+        self.customer.locked = self.locked_box.isChecked()
+        self.customer.save()
+        self.emit(SIGNAL('customerEdited()'))
+        self.update(self.customer)
+        
+    def update(self, customer):
+        self.customer = customer
+        self.empty_fields()
+        self.setWindowTitle(customer.name + ' details')
+        self.name_field.setText(customer.name)
+        self.name_edit_field.setText(customer.name)
+        self.depts_field.update(customer)
+        self.email_field.setText(customer.email)
+        self.email_edit_field.setText(customer.email)
+        self.room_field.setText(customer.room)
+        self.room_edit_field.setText(customer.room)
+        self.team_label.setText('Yes' if customer.isPuente else 'No')
+        self.team_box.setChecked(True if customer.isPuente else False)
+        self.locked_label.setText('Yes' if customer.locked else 'No')
+        self.locked_box.setChecked(True if customer.locked else False)
+        
+    def ok_clicked(self):
+        self.hide()
+        self.empty_fields()
+    
+    
+    def empty_fields(self):
+        for stack in self.stacks:
+            stack.setCurrentIndex(0)
+        self.name_field.setText('')
+        self.email_field.setText('')
+        self.room_field.setText('')
+        self.name_edit_field.setText('')
+        self.email_edit_field.setText('')
+        self.room_edit_field.setText('')
+        self.team_box.setText('')
+        self.locked_box.setText('')        
         
 class CustomerListBlockWidget(QWidget):
     def __init__(self, customers, prices, headline, settings):
@@ -119,7 +230,7 @@ class CustomerListBlockWidget(QWidget):
         layout.addWidget(self.table)
         
         self.footer = CustomerListFooter(customers)
-        
+        self.details_dialog = CustomerDetailsDialog()
         self.connect(self.footer.undo_widget, SIGNAL("clicked()"), self.do_undo)
         
         layout.addWidget(self.footer)
@@ -192,16 +303,21 @@ class CustomerTableWidget(QTableWidget):
         for i in range(self.columnCount()):
             self.removeColumn(0)
         self.row_dict = dict()
-        for i in range(6 + len(prices)):
+        for i in range(7 + len(prices)):
             self.insertColumn(i)
+        self.setColumnWidth(1, 30)
+        self.setColumnWidth(6+len(prices), 30)
         self.setHorizontalHeaderItem(0, QTableWidgetItem('Name'))
-        self.setHorizontalHeaderItem(1, QTableWidgetItem('Depts'))
-        self.setHorizontalHeaderItem(2, QTableWidgetItem('Buy'))
-        self.setHorizontalHeaderItem(2+len(prices), QTableWidgetItem('Pay'))
-        self.setHorizontalHeaderItem(4+len(prices), QTableWidgetItem('Last Paid'))
+        self.setHorizontalHeaderItem(1, QTableWidgetItem('Edit'))
+        self.setHorizontalHeaderItem(2, QTableWidgetItem('Depts'))
+        self.setHorizontalHeaderItem(3, QTableWidgetItem('Buy'))
+        self.setHorizontalHeaderItem(3+len(prices), QTableWidgetItem('Pay'))
+        self.setHorizontalHeaderItem(5+len(prices), QTableWidgetItem('Last Paid'))
+        self.setHorizontalHeaderItem(6+len(prices), QTableWidgetItem('Del'))
         for i, c in enumerate(customers):
             self.insertRow(0)
             table_row = TableRow(c, self.prices, self.settings)
+            self.connect(table_row.edit_field, SIGNAL('clicked()'), self.show_details)
             for buy_button in table_row.price_buttons:
                 self.connect(buy_button, SIGNAL("clicked()"), self.buy)
             self.connect(table_row.pay_field, SIGNAL('clicked()'), self.pay)
@@ -211,7 +327,10 @@ class CustomerTableWidget(QTableWidget):
             
             self.row_dict[c.name] = table_row
     
-            
+    def show_details(self):
+        self.frame.details_dialog.update(self.sender().customer)
+        self.frame.details_dialog.show()
+        
     def buy(self):
         customer = self.sender().customer
         price = self.sender().price
@@ -269,6 +388,8 @@ class TableRow(object):
         self.field_list = list()
         self.name_field = NameLabel(customer)
         self.field_list.append(self.name_field)
+        self.edit_field = CustomerEditButton(customer)
+        self.field_list.append(self.edit_field)
         self.depts_field = DeptLabel(customer)
         self.field_list.append(self.depts_field)
         self.price_buttons = list()
@@ -287,16 +408,26 @@ class TableRow(object):
         
     def update(self, customer, settings):
         self.name_field.update(customer)
+        self.edit_field.update(customer)
         self.depts_field.update(customer)
         for button in self.price_buttons:
             button.update(customer)
         self.last_paid_field.update(customer, settings)
         self.delete_field.update(customer)
-            
-class DeptLabel(QLabel):
+
+class CustomerEditButton(QPushButton):
     def __init__(self, customer):
-        QLabel.__init__(self)
+        QPushButton.__init__(self, QIcon('/home/zeratul/projects/plist-qt/img/16x16/user-properties.png'), '')
+        self.setToolTip('edit ' + customer.name)
         self.update(customer)
+    def update(self, customer):
+        self.customer = customer
+        
+class DeptLabel(QLabel):
+    def __init__(self, customer=None):
+        QLabel.__init__(self)
+        if customer:
+            self.update(customer)
     
     def update(self, customer):
         self.setText(str(customer.depts)+' EUR')
@@ -311,7 +442,7 @@ class DeptLabel(QLabel):
             
 class BuyButton(QPushButton):
     def __init__(self, price, customer):
-        QPushButton.__init__(self, str(price.price)+' ct')
+        QPushButton.__init__(self, QIcon('/home/zeratul/projects/plist-qt/img/16x16/help-donate.png'), str(price.price)+' ct')
         self.customer = customer
         self.price = price
         self.update(customer)
@@ -324,7 +455,7 @@ class BuyButton(QPushButton):
             self.setEnabled(True)
 class PayButton(QPushButton):
     def __init__(self, customer):
-        QPushButton.__init__(self, 'pay')
+        QPushButton.__init__(self, QIcon('/home/zeratul/projects/plist-qt/img/16x16/wallet-open.png'), 'pay')
         self.customer = customer
             
             
@@ -341,7 +472,8 @@ class NameLabel(QLabel):
 
 class DeleteButton(QPushButton):
     def __init__(self, customer):
-        QPushButton.__init__(self, 'delete')
+        QPushButton.__init__(self, QIcon('/home/zeratul/projects/plist-qt/img/16x16/user-group-delete.png'), '')
+        self.setToolTip('delete ' + customer.name)
         self.customer = customer
         self.update(customer)
     def update(self, customer):
@@ -364,7 +496,7 @@ class LastPaidLabel(QLabel):
             
 class UndoButton(QPushButton):
     def __init__(self):
-        QPushButton.__init__(self, 'Undo')
+        QPushButton.__init__(self, QIcon('/home/zeratul/projects/plist-qt/img/16x16/edit-undo.png'), 'Undo')
         self.customer = None
         self.money = None
     def set_undo(self, customer, money):
