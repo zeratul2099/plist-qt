@@ -45,16 +45,43 @@ class PlistToolbar(QToolBar):
     def __init__(self):
         QToolBar.__init__(self)
         self.new_customer_dialog = NewCustomerDialog()
+        self.all_stats_dialog = StatsDialog()
+        self.customer_stats_dialog = StatsDialog()
+        self.team_stats_dialog = StatsDialog()
         self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         new_customer_action = QAction(QIcon('img/16x16/user-group-new.png'), 'New customer',self)
         self.connect(new_customer_action, SIGNAL('triggered()'), self.new_customer_dialog.show)
         self.addAction(new_customer_action)
-        self.addAction('Statistics customer')
-        self.addAction('Statistics team')
-        self.addAction('Statistics sum')
+        show_customer_stats_action = QAction(QIcon('img/16x16/view-statistics.png'), 'Statistics customer', self)
+        self.connect(show_customer_stats_action, SIGNAL('triggered()'), self.show_customer_stats)
+        self.addAction(show_customer_stats_action)
+        show_team_stats_action = QAction(QIcon('img/16x16/view-statistics.png'), 'Statistics team', self)
+        self.connect(show_team_stats_action, SIGNAL('triggered()'), self.show_team_stats)
+        self.addAction(show_team_stats_action)
+        show_all_stats_action = QAction(QIcon('img/16x16/view-statistics.png'), 'Statistics sum', self)
+        self.connect(show_all_stats_action, SIGNAL('triggered()'), self.show_all_stats)
+        self.addAction(show_all_stats_action)
         self.addAction('Settings')
         self.addAction('Menu')
+        
+    def show_all_stats(self):
+        transactions = Transaction.objects.order_by("time").reverse()
+        self.all_stats_dialog.update(transactions, 'all')
+        self.all_stats_dialog.setWindowTitle('All statistics')
+        self.all_stats_dialog.show()
+        
+    def show_customer_stats(self):
+        transactions = Transaction.objects.filter(customer__isPuente=False).order_by("time").reverse()
+        self.all_stats_dialog.update(transactions, 'customer')
+        self.all_stats_dialog.setWindowTitle('Customer statistics')
+        self.all_stats_dialog.show()
 
+    def show_team_stats(self):
+        transactions = Transaction.objects.filter(customer__isPuente=True).order_by("time").reverse()
+        self.all_stats_dialog.update(transactions, 'team')
+        self.all_stats_dialog.setWindowTitle('Team statistics')
+        self.all_stats_dialog.show()
+        
 class NewCustomerDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
@@ -174,7 +201,7 @@ class CustomerDetailsDialog(QDialog):
         self.button_stack.addWidget(edit_button)
         self.button_stack.addWidget(save_button)
         layout.addRow(QLabel('Edit:'), self.button_stack)
-        self.stats_image = QLabel()
+        self.stats_image = StatsDialog(False)
         layout.addWidget(self.stats_image)
         button_box = QDialogButtonBox()
         
@@ -202,8 +229,7 @@ class CustomerDetailsDialog(QDialog):
     def update(self, customer):
         self.customer = customer
         transactions = Transaction.objects.filter(customer=customer).order_by("time").reverse()
-        renderPlot(transactions, customer.name, '/home/zeratul/projects/plist-qt/')
-        self.stats_image.setPixmap(QPixmap.fromImage(QImage('/home/zeratul/projects/plist-qt/stats/' + customer.name + '.svg')))
+        self.stats_image.update(transactions, customer.name)
         self.empty_fields()
         self.setWindowTitle(customer.name + ' details')
         self.name_field.setText(customer.name)
@@ -239,6 +265,49 @@ class CustomerDetailsDialog(QDialog):
         self.locked_box.setChecked(False)
         self.comment_field.setText('')
         self.comment_edit_field.setText('')
+
+class StatsDialog(QDialog):
+    def __init__(self, standalone=True):
+        QDialog.__init__(self)
+        layout = QVBoxLayout()
+        self.standalone = standalone
+        self.page = 0
+        self.len_page = 100
+        self.tabs = QTabWidget()
+        self.stats_image = QLabel()
+        self.tabs.addTab(self.stats_image, QIcon('img/32x32/view-investment.png'), 'Statistics')
+        self.list_widget = QTableWidget()
+        self.list_widget.insertColumn(0)
+        self.list_widget.insertColumn(0)
+        self.list_widget.insertColumn(0)
+        self.list_widget.setColumnWidth(0, 150)
+        self.list_widget.setColumnWidth(2, 150)
+        self.list_widget.setHorizontalHeaderItem(0, QTableWidgetItem('Name'))
+        self.list_widget.setHorizontalHeaderItem(1, QTableWidgetItem('Price'))
+        self.list_widget.setHorizontalHeaderItem(2, QTableWidgetItem('Time/Date'))
+        self.tabs.addTab(self.list_widget, QIcon('img/32x32/view-income-categories.png'), 'List')
+        layout.addWidget(self.tabs)
+        if self.standalone:
+            button_box = QDialogButtonBox()
+            ok_button = button_box.addButton(button_box.Ok)
+            self.connect(ok_button, SIGNAL('clicked()'), self.ok_clicked)
+            layout.addWidget(button_box)
+        self.setLayout(layout)
+        
+    def update(self, transactions, title):
+        for i in range(self.list_widget.rowCount()):
+            self.list_widget.removeRow(0)
+        reverse_transactions = transactions.reverse()
+        for idx, transaction in enumerate(transactions[self.page*self.len_page:(self.page+1)*self.len_page]):
+            self.list_widget.insertRow(idx)
+            self.list_widget.setCellWidget(idx, 0, QLabel(transaction.customer.name))
+            self.list_widget.setCellWidget(idx, 1, QLabel(str(transaction.price) + ' EUR'))
+            self.list_widget.setCellWidget(idx, 2, QLabel(transaction.time.strftime('%H:%M:%S, %d.%m.%Y')))
+        renderPlot(transactions, title, '/home/zeratul/projects/plist-qt/')
+        self.stats_image.setPixmap(QPixmap.fromImage(QImage('/home/zeratul/projects/plist-qt/stats/' + title + '.svg')))
+        
+    def ok_clicked(self):
+        self.hide()
         
 class CustomerListBlockWidget(QWidget):
     def __init__(self, customers, prices, headline, settings):
