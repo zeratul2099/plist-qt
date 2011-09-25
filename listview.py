@@ -55,6 +55,7 @@ class PlistToolbar(QToolBar):
 class NewCustomerDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
+        self.resize(280,160)
         layout = QFormLayout()
         self.setWindowTitle('New Customer')
         self.name_field = QLineEdit()
