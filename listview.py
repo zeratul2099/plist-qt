@@ -6,6 +6,8 @@ from PyQt4.QtGui import *
 import sys
 from datetime import datetime, timedelta, date
 from decimal import Decimal, getcontext
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg 
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 
 class MainWindow(QWidget):
     
@@ -25,6 +27,8 @@ class MainWindow(QWidget):
         self.connect(self.toolbar.new_customer_dialog, SIGNAL('newCustomer()'), self.update)
         self.connect(self.p_men_box.table, SIGNAL('customerDeleted()'), self.update)
         self.connect(self.customer_box.table, SIGNAL('customerDeleted()'), self.update)
+        self.connect(self.p_men_box.table, SIGNAL('customerChanged()'), self.p_men_box.details_dialog.customer_updated)
+        self.connect(self.customer_box.table, SIGNAL('customerChanged()'), self.customer_box.details_dialog.customer_updated)
         self.connect(self.p_men_box.details_dialog, SIGNAL('customerEdited()'), self.update)
         self.connect(self.customer_box.details_dialog, SIGNAL('customerEdited()'), self.update)
         layout.addWidget(self.toolbar)
@@ -144,12 +148,12 @@ class CustomerDetailsDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
         self.customer = None
-        self.resize(280,160)
         meta_widget = QWidget()
         meta_layout = QVBoxLayout()
         meta_widget.setLayout(meta_layout)
         
         form_layout = QFormLayout()
+        form_layout.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
         self.stacks = list()
         self.name_stack = QStackedWidget()
         self.email_stack = QStackedWidget()
@@ -195,7 +199,7 @@ class CustomerDetailsDialog(QDialog):
         self.locked_stack.addWidget(self.locked_label)
         self.locked_stack.addWidget(self.locked_box)
         self.comment_field = QLabel()
-        self.comment_edit_field = QTextEdit()
+        self.comment_edit_field = QLineEdit()
         self.comment_stack.addWidget(self.comment_field)
         self.comment_stack.addWidget(self.comment_edit_field)
         form_layout.addRow(QLabel('Name:'), self.name_stack)
@@ -210,8 +214,9 @@ class CustomerDetailsDialog(QDialog):
         self.button_stack.addWidget(edit_button)
         self.button_stack.addWidget(save_button)
         form_layout.addRow(QLabel('Edit:'), button_container)
-        self.stats_image = StatsDialog(False)
         
+        self.stats_image = StatsDialog(False)
+        #self.resize(950,600)
         button_box = QDialogButtonBox()
         
         ok_button = button_box.addButton(button_box.Ok)
@@ -222,15 +227,16 @@ class CustomerDetailsDialog(QDialog):
         
         form_widget = QWidget()
         form_widget.setLayout(form_layout)
-        form_container = QWidget()
-        form_container_layout = QHBoxLayout()
-        form_container_layout.addWidget(form_widget)
-        form_container_layout.addStretch()
-        form_container.setLayout(form_container_layout)
-        
-        meta_layout.addWidget(form_container)
+        form_widget.setSizePolicy(QSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum))
+        #self.comment_edit_field.setSizePolicy(QSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum))
+        #self.comment_stack.setSizePolicy(QSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum))
+
+        self.stats_image.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
+        meta_layout.addWidget(form_widget)
         meta_layout.addWidget(self.stats_image)
         meta_layout.addWidget(button_box)
+        meta_layout.setStretchFactor(self.stats_image,5)
+        #
         self.setLayout(meta_layout)
     def show_edit_fields(self):
         for stack in self.stacks:
@@ -241,7 +247,7 @@ class CustomerDetailsDialog(QDialog):
         self.customer.room = self.room_edit_field.text()
         self.customer.isPuente = self.team_box.isChecked()
         self.customer.locked = self.locked_box.isChecked()
-        self.customer.comment = self.comment_edit_field.toPlainText()
+        self.customer.comment = self.comment_edit_field.text()
         self.customer.save()
         self.emit(SIGNAL('customerEdited()'))
         self.update(self.customer)
@@ -250,6 +256,7 @@ class CustomerDetailsDialog(QDialog):
         self.customer = customer
         transactions = Transaction.objects.filter(customer=customer).order_by("time").reverse()
         self.stats_image.update(transactions, customer.name)
+        self.resize(self.stats_image.canvas_width, self.stats_image.canvas_height+300)
         self.empty_fields()
         self.setWindowTitle(customer.name + ' details')
         self.name_field.setText(customer.name)
@@ -265,6 +272,11 @@ class CustomerDetailsDialog(QDialog):
         self.locked_box.setChecked(True if customer.locked else False)
         self.comment_field.setText(customer.comment)
         self.comment_edit_field.setText(customer.comment)
+        
+    def customer_updated(self):
+        customer = Customer.objects.get(name=self.customer.name)
+        self.update(customer)
+        
     def ok_clicked(self):
         self.hide()
         self.empty_fields()
@@ -290,6 +302,8 @@ class StatsDialog(QDialog):
     def __init__(self, standalone=True):
         QDialog.__init__(self)
         layout = QVBoxLayout()
+        self.canvas_width = 0
+        self.canvas_height = 0
         self.standalone = standalone
         self.page = 0
         self.len_page = 100
@@ -304,7 +318,7 @@ class StatsDialog(QDialog):
         first_button = QPushButton(QIcon('img/16x16/arrow-left-double.png'), '')
         prev_button = QPushButton(QIcon('img/16x16/arrow-left.png'), '')
         next_button = QPushButton(QIcon('img/16x16/arrow-right.png'), '')
-        last_button = QPushButton(QIcon('img/16x16/arrow-right.png'), '')
+        last_button = QPushButton(QIcon('img/16x16/arrow-right-double.png'), '')
         self.connect(prev_button, SIGNAL('clicked()'), self.prev_page)
         self.connect(next_button, SIGNAL('clicked()'), self.next_page)
         self.connect(first_button, SIGNAL('clicked()'), self.first_page)
@@ -342,8 +356,16 @@ class StatsDialog(QDialog):
         self.transactions = transactions
         self.page = 0
         self.update_list(self.transactions)
-        renderPlot(self.transactions, title, '/home/zeratul/projects/plist-qt/')
-        self.stats_image.setPixmap(QPixmap.fromImage(QImage('/home/zeratul/projects/plist-qt/stats/' + title + '.svg')))
+
+        fig = renderPlot(self.transactions)
+        canvas = FigureCanvasQTAgg(fig)
+        canvas.setParent(self.stats_image)
+        self.canvas_height = canvas.height()
+        self.canvas_width = canvas.width()
+        fig.canvas.draw()
+        canvas.draw()
+        self.mpl_toolbar = NavigationToolbar2QTAgg(canvas, self.stats_image)
+        self.resize(canvas.width(),canvas.height()+100)
     
     def update_list(self, transactions):
         self.transactions = transactions
@@ -504,6 +526,7 @@ class CustomerTableWidget(QTableWidget):
         self.update_customer_status(customer)
         # save all changes to customer in database
         customer.save()
+        self.emit(SIGNAL('customerChanged()'))
         self.frame.footer.undo_widget.set_undo(customer, money)
         
     def pay(self):
@@ -516,6 +539,7 @@ class CustomerTableWidget(QTableWidget):
         self.update_customer_status(customer)
         customer.save()
         self.row_dict[customer.name].pay_box.setText('')
+        self.emit(SIGNAL('customerChanged()'))
         self.frame.footer.undo_widget.set_undo(customer, -money)
         
     def delete_customer(self):
@@ -536,9 +560,11 @@ class CustomerTableWidget(QTableWidget):
             customer.dept_status = 1
         else:
             customer.dept_status = 2
+        
         self.row_dict[customer.name].update(customer, self.settings)
         
         self.frame.footer.update(self.customers)
+        
         
 
         
