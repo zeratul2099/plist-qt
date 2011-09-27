@@ -3,6 +3,7 @@
 # main elements for plist-qt
 #
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -80,6 +81,7 @@ class CustomerTableWidget(QTableWidget):
     def __init__(self, customers, prices, settings, frame):
         QTableWidget.__init__(self)
         self.frame = frame
+        self.setSelectionMode(QAbstractItemView.NoSelection)
         self.update(customers, prices, settings)
 
 

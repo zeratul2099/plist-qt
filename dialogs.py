@@ -2,7 +2,7 @@
 #
 # dialogs for plist-qt
 #
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -20,7 +20,7 @@ class NewCustomerDialog(QDialog):
         layout = QFormLayout()
         self.setWindowTitle('New Customer')
         self.name_field = QLineEdit()
-        self.email_field = QLineEdit()
+        self.email_field = EMailEdit()
         self.room_field = QLineEdit()
         self.team_box = QCheckBox()
         self.locked_box = QCheckBox()
@@ -108,7 +108,7 @@ class CustomerDetailsDialog(QDialog):
         self.depts_field = DeptLabel()
         
         self.email_field = QLabel()
-        self.email_edit_field = QLineEdit()
+        self.email_edit_field = EMailEdit()
         self.email_stack.addWidget(self.email_field)
         self.email_stack.addWidget(self.email_edit_field)
         

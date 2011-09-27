@@ -5,7 +5,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import sys
 from datetime import datetime, timedelta, date
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg 
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 
@@ -17,9 +17,9 @@ class MainWindow(QWidget):
     
     def __init__(self):
         QWidget.__init__(self)
-        self.customers =  Customer.objects.filter(isPuente=False)
+        self.customers =  Customer.objects.filter(isPuente=False).order_by('name').reverse()
         self.prices = PriceList.objects.filter(isPuente=False)
-        self.p_men =  Customer.objects.filter(isPuente=True)
+        self.p_men =  Customer.objects.filter(isPuente=True).order_by('name').reverse()
         self.p_prices = PriceList.objects.filter(isPuente=True)        
         self.settings = PlistSettings.objects.all()[0]
         layout = QVBoxLayout()
@@ -28,6 +28,8 @@ class MainWindow(QWidget):
         self.toolbar = PlistToolbar()
         self.p_men_box = CustomerListBlockWidget(self.p_men, self.p_prices, 'Puente', self.settings)
         self.customer_box = CustomerListBlockWidget(self.customers, self.prices, 'Customer', self.settings)
+        self.p_men_box.table.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Preferred)
+        self.p_men_box.table.adjustSize()
         self.connect(self.toolbar.new_customer_dialog, SIGNAL('newCustomer()'), self.update)
         self.connect(self.p_men_box.table, SIGNAL('customerDeleted()'), self.update)
         self.connect(self.customer_box.table, SIGNAL('customerDeleted()'), self.update)
@@ -41,13 +43,14 @@ class MainWindow(QWidget):
         self.center_widget.setLayout(layout)
 
     def update(self):
-        self.customers =  Customer.objects.filter(isPuente=False)
+        self.customers =  Customer.objects.filter(isPuente=False).order_by('name').reverse()
         self.prices = PriceList.objects.filter(isPuente=False)
-        self.p_men =  Customer.objects.filter(isPuente=True)
+        self.p_men =  Customer.objects.filter(isPuente=True).order_by('name').reverse()
         self.p_prices = PriceList.objects.filter(isPuente=True)        
         self.settings = PlistSettings.objects.all()[0]
         self.p_men_box.update(self.p_men, self.p_prices, self.settings)
         self.customer_box.update(self.customers, self.prices, self.settings)
+        self.p_men_box.table.adjustSize()
         
 class PlistToolbar(QToolBar):
     def __init__(self):

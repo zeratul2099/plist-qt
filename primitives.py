@@ -95,3 +95,11 @@ class UndoButton(QPushButton):
         self.customer = customer
         self.money = money
         self.setText('Undo: ' + customer.name + ' - ' + str(money))
+        
+class EMailEdit(QLineEdit):
+    def __init__(self):
+        QLineEdit.__init__(self)
+        re = QRegExp()
+        re.setPattern("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$")
+        validator =  QRegExpValidator(re, self)
+        self.setValidator(validator)
