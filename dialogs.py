@@ -13,6 +13,98 @@ from puente.plist.models import Customer, PriceList, PlistSettings, Transaction
 from puente.plist.views import renderPlot
 from primitives import *
 
+class SettingsDialog(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        self.settings = None
+        self.c_prices = list()
+        self.p_prices = list()
+        layout = QVBoxLayout()
+        form_widget = QWidget()
+        form_layout = QFormLayout()
+        self.limit_edit = QLineEdit()
+        self.team_limit_edit = QLineEdit()
+        self.last_paid_limit_edit = QLineEdit()
+        form_layout.addRow(QLabel('Limit:'), self.limit_edit)
+        form_layout.addRow(QLabel('Teamlimit:'), self.team_limit_edit)
+        form_layout.addRow(QLabel('Last Paid Limit (days):'), self.last_paid_limit_edit)
+        form_widget.setLayout(form_layout)
+        
+        prices_widget = QWidget()
+        prices_layout = QHBoxLayout()
+        self.c_price_widget = PriceBox('Customer Prices')
+        self.p_price_widget = PriceBox('Team Prices')
+        
+        prices_layout.addWidget(self.c_price_widget)
+        prices_layout.addWidget(self.p_price_widget)
+        prices_widget.setLayout(prices_layout)
+        
+        button_box = QDialogButtonBox()
+        ok_button = button_box.addButton(button_box.Ok)
+        cancel_button = button_box.addButton(button_box.Cancel)
+        self.connect(ok_button, SIGNAL('clicked()'), self.ok_clicked)
+        self.connect(cancel_button, SIGNAL('clicked()'), self.cancel_clicked)
+        layout.addWidget(form_widget)
+        layout.addWidget(button_box)
+        layout.addWidget(prices_widget)
+        
+        
+        self.setLayout(layout)
+        
+    def update(self, settings, c_prices, p_prices):
+        self.settings = settings
+        self.c_prices = c_prices
+        self.p_prices = p_prices
+        self.c_price_widget.prices = c_prices
+        self.p_price_widget.prices = p_prices
+        self.limit_edit.setText(str(settings.custLimit))
+        self.team_limit_edit.setText(str(settings.teamLimit))
+        self.last_paid_limit_edit.setText(str(settings.markLastPaid))
+        self.c_price_widget.list.clear()
+        self.p_price_widget.list.clear()
+        for cp in c_prices:
+            self.c_price_widget.list.addItem(str(cp.price)+' ct')
+        for pp in p_prices:
+            self.p_price_widget.list.addItem(str(pp.price)+' ct')
+            
+    def ok_clicked(self):
+        self.settings.custLimit = int(self.limit_edit.text())
+        self.settings.teamLimit = int(self.team_limit_edit.text())
+        self.settings.markLastPaid = int(self.last_paid_limit_edit.text())
+        self.settings.save()
+        self.emit(SIGNAL('settingsChanged()'))
+        self.hide()
+    def cancel_clicked(self):
+        self.hide()
+class PriceBox(QWidget):
+    def __init__(self, label):
+        QWidget.__init__(self)
+        self.prices = None
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel(label))
+        button_widget = QWidget()
+        button_layout = QHBoxLayout()
+        self.add_button = QPushButton('Add')
+        self.del_button = QPushButton('Del')
+        self.connect(self.add_button, SIGNAL('clicked()'), self.add_price)
+        self.connect(self.del_button, SIGNAL('clicked()'), self.del_price)
+        button_layout.addWidget(self.add_button)
+        button_layout.addWidget(self.del_button)
+        self.new_price_field = QLineEdit()
+        layout.addWidget(self.new_price_field)
+        button_widget.setLayout(button_layout)
+        layout.addWidget(button_widget)
+        self.list = QListWidget()
+        layout.addWidget(self.list)
+        self.setLayout(layout)
+    def add_price(self):
+        pass
+    def del_price(self):
+        idx = self.list.currentRow()
+        self.prices[idx].delete()
+        self.list.takeItem(idx)
+        self.emit(SIGNAL('settingsChanged()'))
+        
 class NewCustomerDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)

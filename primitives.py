@@ -45,6 +45,12 @@ class BuyButton(QPushButton):
             self.setEnabled(False)
         else:
             self.setEnabled(True)
+            
+    def event(self, event):
+        if( (self.isEnabled() is False) and (event.type() == QEvent.Wheel) ):
+            return False 
+        return QPushButton.event(self, event)
+    
 class PayButton(QPushButton):
     def __init__(self, customer):
         QPushButton.__init__(self, QIcon('img/16x16/wallet-open.png'), 'pay')
@@ -73,7 +79,11 @@ class DeleteButton(QPushButton):
             self.setEnabled(False)
         else:
             self.setEnabled(True)
-
+    def event(self, event):
+        if( (self.isEnabled() is False) and (event.type() == QEvent.Wheel) ):
+            return False 
+        return QPushButton.event(self, event)
+        
 class LastPaidLabel(QLabel):
     def __init__(self, customer, settings):
         QLabel.__init__(self)

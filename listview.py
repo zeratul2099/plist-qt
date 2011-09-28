@@ -31,6 +31,9 @@ class MainWindow(QWidget):
         self.p_men_box.table.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Preferred)
         self.p_men_box.table.adjustSize()
         self.connect(self.toolbar.new_customer_dialog, SIGNAL('newCustomer()'), self.update)
+        self.connect(self.toolbar.settings_dialog, SIGNAL('settingsChanged()'), self.settings_changed)
+        self.connect(self.toolbar.settings_dialog.c_price_widget, SIGNAL('settingsChanged()'), self.update)
+        self.connect(self.toolbar.settings_dialog.p_price_widget, SIGNAL('settingsChanged()'), self.update)
         self.connect(self.p_men_box.table, SIGNAL('customerDeleted()'), self.update)
         self.connect(self.customer_box.table, SIGNAL('customerDeleted()'), self.update)
         self.connect(self.p_men_box.table, SIGNAL('customerChanged()'), self.p_men_box.details_dialog.customer_updated)
@@ -40,8 +43,11 @@ class MainWindow(QWidget):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.p_men_box)
         layout.addWidget(self.customer_box)
+        layout.setStretchFactor(self.p_men_box, 0)
         self.center_widget.setLayout(layout)
 
+    def resizeEvent(self, event):
+        self.center_widget.resize(event.size())
     def update(self):
         self.customers =  Customer.objects.filter(isPuente=False).order_by('name').reverse()
         self.prices = PriceList.objects.filter(isPuente=False)
@@ -51,7 +57,13 @@ class MainWindow(QWidget):
         self.p_men_box.update(self.p_men, self.p_prices, self.settings)
         self.customer_box.update(self.customers, self.prices, self.settings)
         self.p_men_box.table.adjustSize()
-        
+    def settings_changed(self):
+        self.update()
+        for c in self.customers:
+            self.customer_box.table.update_customer_status(c)
+        for p in self.p_men:
+            self.p_men_box.table.update_customer_status(p)
+            
 class PlistToolbar(QToolBar):
     def __init__(self):
         QToolBar.__init__(self)
@@ -59,6 +71,7 @@ class PlistToolbar(QToolBar):
         self.all_stats_dialog = StatsDialog()
         self.customer_stats_dialog = StatsDialog()
         self.team_stats_dialog = StatsDialog()
+        self.settings_dialog = SettingsDialog()
         self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         new_customer_action = QAction(QIcon('img/16x16/user-group-new.png'), 'New customer',self)
         self.connect(new_customer_action, SIGNAL('triggered()'), self.new_customer_dialog.show)
@@ -72,9 +85,16 @@ class PlistToolbar(QToolBar):
         show_all_stats_action = QAction(QIcon('img/16x16/view-statistics.png'), 'Statistics sum', self)
         self.connect(show_all_stats_action, SIGNAL('triggered()'), self.show_all_stats)
         self.addAction(show_all_stats_action)
-        self.addAction('Settings')
+        show_settings_action = QAction(QIcon('img/16x16/configure.png'), 'Settings', self)
+        self.connect(show_settings_action, SIGNAL('triggered()'), self.show_settings)
+        self.addAction(show_settings_action)
         self.addAction('Menu')
-        
+    
+    def show_settings(self):
+        main_window = self.parent().parent()
+        self.settings_dialog.update(main_window.settings, main_window.prices, main_window.p_prices)
+        self.settings_dialog.show()
+    
     def show_all_stats(self):
         transactions = Transaction.objects.order_by("time").reverse()
         self.all_stats_dialog.update(transactions)
