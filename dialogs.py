@@ -47,9 +47,9 @@ class SettingsDialog(QDialog):
         self.connect(reset_button, SIGNAL('clicked()'), self.reset_clicked)
         self.connect(close_button, SIGNAL('clicked()'), self.close_clicked)
         layout.addWidget(form_widget)
-        layout.addWidget(button_box)
-        layout.addWidget(prices_widget)
         
+        layout.addWidget(prices_widget)
+        layout.addWidget(button_box)
         
         self.setLayout(layout)
         
