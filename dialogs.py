@@ -40,10 +40,12 @@ class SettingsDialog(QDialog):
         prices_widget.setLayout(prices_layout)
         
         button_box = QDialogButtonBox()
-        ok_button = button_box.addButton(button_box.Ok)
-        cancel_button = button_box.addButton(button_box.Cancel)
-        self.connect(ok_button, SIGNAL('clicked()'), self.ok_clicked)
-        self.connect(cancel_button, SIGNAL('clicked()'), self.cancel_clicked)
+        save_button = button_box.addButton(button_box.Save)
+        reset_button = button_box.addButton(button_box.Reset)
+        close_button = button_box.addButton(button_box.Close)
+        self.connect(save_button, SIGNAL('clicked()'), self.save_clicked)
+        self.connect(reset_button, SIGNAL('clicked()'), self.reset_clicked)
+        self.connect(close_button, SIGNAL('clicked()'), self.close_clicked)
         layout.addWidget(form_widget)
         layout.addWidget(button_box)
         layout.addWidget(prices_widget)
@@ -67,15 +69,22 @@ class SettingsDialog(QDialog):
         for pp in p_prices:
             self.p_price_widget.list.addItem(str(pp.price)+' ct')
             
-    def ok_clicked(self):
+    def save_clicked(self):
         self.settings.custLimit = int(self.limit_edit.text())
         self.settings.teamLimit = int(self.team_limit_edit.text())
         self.settings.markLastPaid = int(self.last_paid_limit_edit.text())
         self.settings.save()
         self.emit(SIGNAL('settingsChanged()'))
+        
+    def close_clicked(self):
         self.hide()
-    def cancel_clicked(self):
-        self.hide()
+        
+    def reset_clicked(self):
+        settings = PlistSettings.objects.all()[0]
+        prices = PriceList.objects.filter(isPuente=False, settings=settings)
+        p_prices = PriceList.objects.filter(isPuente=True, settings=settings)
+        self.update(settings, prices, p_prices)
+        
 class PriceBox(QWidget):
     def __init__(self, label):
         QWidget.__init__(self)
@@ -84,8 +93,8 @@ class PriceBox(QWidget):
         layout.addWidget(QLabel(label))
         button_widget = QWidget()
         button_layout = QHBoxLayout()
-        self.add_button = QPushButton('Add')
-        self.del_button = QPushButton('Del')
+        self.add_button = QPushButton(QIcon('img/16x16/list-add.png'), 'Add')
+        self.del_button = QPushButton(QIcon('img/16x16/list-remove.png'), 'Del')
         self.connect(self.add_button, SIGNAL('clicked()'), self.add_price)
         self.connect(self.del_button, SIGNAL('clicked()'), self.del_price)
         button_layout.addWidget(self.add_button)

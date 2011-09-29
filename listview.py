@@ -32,6 +32,7 @@ class MainWindow(QWidget):
         self.p_men_box.table.adjustSize()
         self.connect(self.toolbar.new_customer_dialog, SIGNAL('newCustomer()'), self.update)
         self.connect(self.toolbar.settings_dialog, SIGNAL('settingsChanged()'), self.settings_changed)
+        self.connect(self.toolbar.settings_dialog.c_price_widget.add_button, SIGNAL('clicked()'), self.add_price)
         self.connect(self.toolbar.settings_dialog.c_price_widget, SIGNAL('settingsChanged()'), self.update)
         self.connect(self.toolbar.settings_dialog.p_price_widget, SIGNAL('settingsChanged()'), self.update)
         self.connect(self.p_men_box.table, SIGNAL('customerDeleted()'), self.update)
@@ -45,7 +46,20 @@ class MainWindow(QWidget):
         layout.addWidget(self.customer_box)
         layout.setStretchFactor(self.p_men_box, 0)
         self.center_widget.setLayout(layout)
-
+    def add_price(self):
+        if self.sender() is self.toolbar.settings_dialog.c_price_widget.add_button:
+            is_puente = False
+            num = self.toolbar.settings_dialog.c_price_widget.new_price_field.text()
+        elif self.sender() is self.toolbar.settings_dialog.p_price_widget.add_button:
+            is_puente = True
+            num = self.toolbar.settings_dialog.p_price_widget.new_price_field.text()
+        else:
+            return
+        price = PriceList(price=num, isPuente=is_puente, settings=self.settings)
+        price.save()
+        self.update()
+        self.toolbar.settings_dialog.update(self.settings, self.prices, self.p_prices)
+    
     def resizeEvent(self, event):
         self.center_widget.resize(event.size())
     def update(self):
