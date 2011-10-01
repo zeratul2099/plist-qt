@@ -16,6 +16,7 @@
 
 from puente.plist.models import Customer, PriceList, PlistSettings, Transaction
 from puente.plist.views import renderPlot
+from puente.pmenu.models import MenuItem
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import sys
@@ -32,17 +33,22 @@ class MainWindow(QWidget):
     
     def __init__(self):
         QWidget.__init__(self)
+        self._update_weekly_sales()
         self.customers =  Customer.objects.filter(isPuente=False).order_by('name').reverse()
-        self.prices = PriceList.objects.filter(isPuente=False)
+        self.prices = PriceList.objects.filter(isPuente=False).order_by('price')
+        
         self.p_men =  Customer.objects.filter(isPuente=True).order_by('name').reverse()
-        self.p_prices = PriceList.objects.filter(isPuente=True)        
+        self.p_prices = PriceList.objects.filter(isPuente=True).order_by('price')
+        self.c_menu_items = dict()
+        self.p_menu_items = dict()
+        self._get_menu_item_dict()
         self.settings = PlistSettings.objects.all()[0]
         layout = QVBoxLayout()
         self.center_widget = QWidget(parent=self)
         self.center_widget.resize(1200,800)
         self.toolbar = PlistToolbar()
-        self.p_men_box = CustomerListBlockWidget(self.p_men, self.p_prices, 'Puente', self.settings)
-        self.customer_box = CustomerListBlockWidget(self.customers, self.prices, 'Customer', self.settings)
+        self.p_men_box = CustomerListBlockWidget(self.p_men, self.p_prices, 'Puente', self.settings, product_dict=self.p_menu_items)
+        self.customer_box = CustomerListBlockWidget(self.customers, self.prices, 'Customer', self.settings, product_dict=self.c_menu_items)
         self.p_men_box.table.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Preferred)
         self.p_men_box.table.adjustSize()
         self.connect(self.toolbar.new_customer_dialog, SIGNAL('newCustomer()'), self.update)
@@ -77,15 +83,18 @@ class MainWindow(QWidget):
     
     def resizeEvent(self, event):
         self.center_widget.resize(event.size())
+        
     def update(self):
         self.customers =  Customer.objects.filter(isPuente=False).order_by('name').reverse()
-        self.prices = PriceList.objects.filter(isPuente=False)
+        self.prices = PriceList.objects.filter(isPuente=False).order_by('price')
         self.p_men =  Customer.objects.filter(isPuente=True).order_by('name').reverse()
-        self.p_prices = PriceList.objects.filter(isPuente=True)        
+        self.p_prices = PriceList.objects.filter(isPuente=True).order_by('price')
         self.settings = PlistSettings.objects.all()[0]
+        self._get_menu_item_dict()
         self.p_men_box.update(self.p_men, self.p_prices, self.settings)
         self.customer_box.update(self.customers, self.prices, self.settings)
         self.p_men_box.table.adjustSize()
+        
     def settings_changed(self):
         self.update()
         for c in self.customers:
@@ -93,6 +102,26 @@ class MainWindow(QWidget):
         for p in self.p_men:
             self.p_men_box.table.update_customer_status(p)
             
+    def _get_menu_item_dict(self):
+        ''' update the weeklySales attribute of every customer. Once every program startup should be enough '''
+        for item in MenuItem.objects.filter(available=True):
+            if item.price in self.c_menu_items:
+                self.c_menu_items[item.price].append(item.name)
+            else:
+                self.c_menu_items[item.price] = [item.name]
+            if item.pPrice in self.p_menu_items:
+                self.p_menu_items[item.pPrice].append(item.name)
+            else:
+                self.p_menu_items[item.pPrice] = [item.name]
+                
+    def _update_weekly_sales(self):
+        for c in Customer.objects.all():
+            if date.today() - c.salesSince > timedelta(7):
+                while c.salesSince + timedelta(7) < date.today():
+                    c.salesSince = c.salesSince + timedelta(7)
+                c.weeklySales = 0
+                c.save()
+                
 class PlistToolbar(QToolBar):
     def __init__(self):
         QToolBar.__init__(self)
@@ -117,7 +146,9 @@ class PlistToolbar(QToolBar):
         show_settings_action = QAction(QIcon('img/16x16/configure.png'), 'Settings', self)
         self.connect(show_settings_action, SIGNAL('triggered()'), self.show_settings)
         self.addAction(show_settings_action)
-        self.addAction('Menu')
+        show_mendu_Edit_action = QAction('Menu', self)
+        self.connect(show_mendu_Edit_action, SIGNAL('triggered()'), self.show_menu_edit)
+        self.addAction(show_mendu_Edit_action)
     
     def show_settings(self):
         main_window = self.parent().parent()
@@ -130,8 +161,6 @@ class PlistToolbar(QToolBar):
         self.all_stats_dialog.setWindowTitle('All statistics')
         self.all_stats_dialog.show()
         
-        
-        
     def show_customer_stats(self):
         transactions = Transaction.objects.filter(customer__isPuente=False).order_by("time").reverse()
         self.all_stats_dialog.update(transactions)
@@ -143,13 +172,11 @@ class PlistToolbar(QToolBar):
         self.all_stats_dialog.update(transactions)
         self.all_stats_dialog.setWindowTitle('Team statistics')
         self.all_stats_dialog.show()
-        
 
-
-
-
-        
-    
+    def show_menu_edit(self):
+        self.box = QMessageBox()
+        self.box.setText('Not yet implemented')
+        self.box.show()
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

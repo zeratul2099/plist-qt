@@ -221,7 +221,8 @@ class CustomerDetailsDialog(QDialog):
         self.name_stack.addWidget(self.name_field)
         self.name_stack.addWidget(self.name_edit_field)
         self.depts_field = DeptLabel()
-        
+        self.weekly_sales_field = QLabel()
+        self.sales_since_field = QLabel()
         self.email_field = QLabel()
         self.email_edit_field = EMailEdit()
         self.email_stack.addWidget(self.email_field)
@@ -246,6 +247,8 @@ class CustomerDetailsDialog(QDialog):
         self.comment_stack.addWidget(self.comment_edit_field)
         form_layout.addRow(QLabel('Name:'), self.name_stack)
         form_layout.addRow(QLabel('Depts:'), self.depts_field)
+        form_layout.addRow(QLabel('Weekly Sales:'), self.weekly_sales_field)
+        form_layout.addRow(QLabel('...since:'), self.sales_since_field)
         form_layout.addRow(QLabel('EMail:'), self.email_stack)
         form_layout.addRow(QLabel('Room-No:'), self.room_stack)
         form_layout.addRow(QLabel('Team:'), self.team_stack)
@@ -258,7 +261,7 @@ class CustomerDetailsDialog(QDialog):
         form_layout.addRow(QLabel('Edit:'), button_container)
         
         self.stats_image = StatsDialog(False)
-        #self.resize(950,600)
+
         button_box = QDialogButtonBox()
         
         ok_button = button_box.addButton(button_box.Ok)
@@ -270,8 +273,6 @@ class CustomerDetailsDialog(QDialog):
         form_widget = QWidget()
         form_widget.setLayout(form_layout)
         form_widget.setSizePolicy(QSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum))
-        #self.comment_edit_field.setSizePolicy(QSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum))
-        #self.comment_stack.setSizePolicy(QSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum))
 
         self.stats_image.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
         meta_layout.addWidget(form_widget)
@@ -306,6 +307,8 @@ class CustomerDetailsDialog(QDialog):
         self.name_field.setText(customer.name)
         self.name_edit_field.setText(customer.name)
         self.depts_field.update(customer)
+        self.weekly_sales_field.setText(str(customer.weeklySales) + ' EUR')
+        self.sales_since_field.setText(customer.salesSince.strftime('%d.%m.%Y'))
         self.email_field.setText(customer.email)
         self.email_edit_field.setText(customer.email)
         self.room_field.setText(customer.room)
@@ -426,6 +429,7 @@ class StatsDialog(QDialog):
     def update_list(self, transactions):
         self.transactions = transactions
         self.list_widget.clear()
+        self.list_widget.setRowCount(0)
         reverse_transactions = transactions.reverse()
         self.page_num_label.setText(str(self.page+1) + '/' + str(len(transactions)/self.len_page+1))
         for idx, transaction in enumerate(transactions[self.page*self.len_page:(self.page+1)*self.len_page]):

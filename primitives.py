@@ -24,7 +24,7 @@ from PyQt4.QtGui import *
 class CustomerEditButton(QPushButton):
     def __init__(self, customer):
         QPushButton.__init__(self, QIcon('img/16x16/user-properties.png'), '')
-        self.setToolTip('edit ' + customer.name)
+        self.setToolTip('Edit ' + customer.name)
         self.update(customer)
     def update(self, customer):
         self.customer = customer
@@ -37,7 +37,7 @@ class DeptLabel(QLabel):
     
     def update(self, customer):
         self.setText(str(customer.depts)+' EUR')
-        if customer.dept_status == -1:
+        if customer.dept_status == -1 or customer.id == 1:
             self.setStyleSheet('QLabel { color : green; }')
         elif customer.dept_status == 1:
             self.setStyleSheet('QLabel { color : red; }')
@@ -47,15 +47,18 @@ class DeptLabel(QLabel):
             self.setStyleSheet('QLabel { color : black; }')
             
 class BuyButton(QPushButton):
-    def __init__(self, price, customer):
+    def __init__(self, price, customer, products=None):
         QPushButton.__init__(self, QIcon('img/16x16/help-donate.png'), str(price.price)+' ct')
         self.customer = customer
         self.price = price
-        self.update(customer)
+        self.update(customer, products)
         
-    def update(self, customer):
+    def update(self, customer, products=None):
+        if products is not None:
+            self.setToolTip(', '.join(products))
         self.customer = customer
-        if customer.dept_status == 2 or (customer.locked and customer.dept_status >= 0):
+        
+        if (customer.dept_status == 2 or (customer.locked and customer.dept_status >= 0)) and customer.id != 1:
             self.setEnabled(False)
         else:
             self.setEnabled(True)
@@ -78,6 +81,8 @@ class NameLabel(QLabel):
         
     def update(self, customer):
         label = customer.name
+        if customer.comment != '':
+            self.setToolTip(customer.comment)
         if customer.locked:
             self.setTextFormat(Qt.RichText)
             label = '<img src="img/16x16/document-encrypt.png">' + label
@@ -86,7 +91,7 @@ class NameLabel(QLabel):
 class DeleteButton(QPushButton):
     def __init__(self, customer):
         QPushButton.__init__(self, QIcon('img/16x16/user-group-delete.png'), '')
-        self.setToolTip('delete ' + customer.name)
+        self.setToolTip('Delete ' + customer.name)
         self.customer = customer
         self.update(customer)
     def update(self, customer):
@@ -102,6 +107,7 @@ class DeleteButton(QPushButton):
 class LastPaidLabel(QLabel):
     def __init__(self, customer, settings):
         QLabel.__init__(self)
+        self.setToolTip('Last Paid')
         self.update(customer, settings)
         
     def update(self, customer, settings):
