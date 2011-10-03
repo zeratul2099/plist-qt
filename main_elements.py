@@ -141,7 +141,7 @@ class CustomerTableWidget(QTableWidget):
     def buy(self):
         customer = self.sender().customer
         price = self.sender().price
-        money = Decimal(price.price)/ Decimal(100.0)
+        money = Decimal(str(price.price))/ Decimal('100.0')
         # update depts ...
         customer.depts += money
         # ... and the weekly sales

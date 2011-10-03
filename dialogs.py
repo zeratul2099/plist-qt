@@ -109,7 +109,7 @@ class PriceBox(QWidget):
         button_layout = QHBoxLayout()
         self.add_button = QPushButton(QIcon('img/16x16/list-add.png'), 'Add')
         self.del_button = QPushButton(QIcon('img/16x16/list-remove.png'), 'Del')
-        self.connect(self.add_button, SIGNAL('clicked()'), self.add_price)
+        #self.connect(self.add_button, SIGNAL('clicked()'), self.add_price)
         self.connect(self.del_button, SIGNAL('clicked()'), self.del_price)
         button_layout.addWidget(self.add_button)
         button_layout.addWidget(self.del_button)
@@ -120,8 +120,7 @@ class PriceBox(QWidget):
         self.list = QListWidget()
         layout.addWidget(self.list)
         self.setLayout(layout)
-    def add_price(self):
-        pass
+
     def del_price(self):
         idx = self.list.currentRow()
         self.prices[idx].delete()

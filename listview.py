@@ -54,6 +54,7 @@ class MainWindow(QWidget):
         self.connect(self.toolbar.new_customer_dialog, SIGNAL('newCustomer()'), self.update)
         self.connect(self.toolbar.settings_dialog, SIGNAL('settingsChanged()'), self.settings_changed)
         self.connect(self.toolbar.settings_dialog.c_price_widget.add_button, SIGNAL('clicked()'), self.add_price)
+        self.connect(self.toolbar.settings_dialog.p_price_widget.add_button, SIGNAL('clicked()'), self.add_price)
         self.connect(self.toolbar.settings_dialog.c_price_widget, SIGNAL('settingsChanged()'), self.update)
         self.connect(self.toolbar.settings_dialog.p_price_widget, SIGNAL('settingsChanged()'), self.update)
         self.connect(self.p_men_box.table, SIGNAL('customerDeleted()'), self.update)
