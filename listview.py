@@ -33,6 +33,7 @@ class MainWindow(QWidget):
     
     def __init__(self):
         QWidget.__init__(self)
+        self.setWindowIcon(QIcon('img/16x16/wallet-open.png'))
         self._update_weekly_sales()
         self.customers =  Customer.objects.filter(isPuente=False).order_by('name').reverse()
         self.prices = PriceList.objects.filter(isPuente=False).order_by('price')

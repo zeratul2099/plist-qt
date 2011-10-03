@@ -30,6 +30,7 @@ from primitives import *
 class SettingsDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
+        self.setWindowIcon(QIcon('img/16x16/configure.png'))
         self.settings = None
         self.c_prices = list()
         self.p_prices = list()
@@ -130,6 +131,7 @@ class PriceBox(QWidget):
 class NewCustomerDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
+        self.setWindowIcon(QIcon('img/16x16/user-group-new.png'))
         self.resize(280,160)
         layout = QFormLayout()
         self.setWindowTitle('New Customer')
@@ -188,6 +190,8 @@ class CustomerDetailsDialog(QDialog):
     
     def __init__(self):
         QDialog.__init__(self)
+        
+        self.setWindowIcon(QIcon('img/16x16/user-properties.png'))
         self.customer = None
         meta_widget = QWidget()
         meta_layout = QVBoxLayout()
@@ -349,6 +353,7 @@ class CustomerDetailsDialog(QDialog):
 class StatsDialog(QDialog):
     def __init__(self, standalone=True):
         QDialog.__init__(self)
+        self.setWindowIcon(QIcon('img/16x16/view-statistics.png'))
         layout = QVBoxLayout()
         self.canvas_width = 0
         self.canvas_height = 0
