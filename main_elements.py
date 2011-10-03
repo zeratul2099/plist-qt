@@ -110,6 +110,7 @@ class CustomerTableWidget(QTableWidget):
         self.row_dict = dict()
         for i in range(7 + len(prices)):
             self.insertColumn(i)
+            self.setColumnWidth(i, 80)
         self.setColumnWidth(1, 30)
         self.setColumnWidth(6+len(prices), 30)
         self.horizontalHeader().hide()

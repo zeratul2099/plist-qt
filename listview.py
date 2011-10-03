@@ -45,7 +45,7 @@ class MainWindow(QWidget):
         self.settings = PlistSettings.objects.all()[0]
         layout = QVBoxLayout()
         self.center_widget = QWidget(parent=self)
-        self.center_widget.resize(1200,800)
+        self.center_widget.resize(1024,600)
         self.toolbar = PlistToolbar()
         self.p_men_box = CustomerListBlockWidget(self.p_men, self.p_prices, 'Puente', self.settings, product_dict=self.p_menu_items)
         self.customer_box = CustomerListBlockWidget(self.customers, self.prices, 'Customer', self.settings, product_dict=self.c_menu_items)
@@ -146,7 +146,7 @@ class PlistToolbar(QToolBar):
         show_settings_action = QAction(QIcon('img/16x16/configure.png'), 'Settings', self)
         self.connect(show_settings_action, SIGNAL('triggered()'), self.show_settings)
         self.addAction(show_settings_action)
-        show_mendu_Edit_action = QAction('Menu', self)
+        show_mendu_Edit_action = QAction(QIcon('img/16x16/wine.png'), 'Menu', self)
         self.connect(show_mendu_Edit_action, SIGNAL('triggered()'), self.show_menu_edit)
         self.addAction(show_mendu_Edit_action)
     
