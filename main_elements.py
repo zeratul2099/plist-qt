@@ -30,6 +30,7 @@ class CustomerListBlockWidget(QWidget):
         QWidget.__init__(self)
         layout = QVBoxLayout()
         layout.addWidget(QLabel(headline))
+        self.product_dict = product_dict
         self.table = CustomerTableWidget(customers, prices, settings, self, product_dict=product_dict)
         layout.addWidget(self.table)
         
@@ -41,6 +42,7 @@ class CustomerListBlockWidget(QWidget):
         self.setLayout(layout)
     
     def update(self, customers, prices, settings, product_dict={}):
+        self.product_dict=product_dict
         self.table.update(customers, prices, settings, product_dict=product_dict)
         self.footer.update(customers)
     
@@ -149,7 +151,7 @@ class CustomerTableWidget(QTableWidget):
         # save for undo function
         new_transaction = Transaction(customer=customer, time=datetime.now(), price=money)
         new_transaction.save()
-        self.update_customer_status(customer)
+        self.update_customer_status(customer, self.frame.product_dict)
         # save all changes to customer in database
         customer.save()
         self.emit(SIGNAL('customerChanged()'))
@@ -165,7 +167,7 @@ class CustomerTableWidget(QTableWidget):
         customer.lastPaid = datetime.now()
         new_transaction = Transaction(customer=customer, time=datetime.now(), price=-money)
         new_transaction.save()
-        self.update_customer_status(customer)
+        self.update_customer_status(customer, self.frame.product_dict)
         customer.save()
         self.row_dict[customer.name].pay_box.setText('')
         self.emit(SIGNAL('customerChanged()'))
@@ -176,7 +178,7 @@ class CustomerTableWidget(QTableWidget):
         delete_button.customer.delete()
         self.emit(SIGNAL('customerDeleted()'))
         
-    def update_customer_status(self,customer):
+    def update_customer_status(self,customer, product_dict={}):
         custLimit = self.settings.custLimit
         custRedLimit = custLimit/2
         teamLimit = self.settings.teamLimit
@@ -190,7 +192,7 @@ class CustomerTableWidget(QTableWidget):
         else:
             customer.dept_status = 2
         
-        self.row_dict[customer.name].update(customer, self.settings)
+        self.row_dict[customer.name].update(customer, self.settings, product_dict)
         
         self.frame.footer.update(self.customers)
         

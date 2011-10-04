@@ -25,12 +25,14 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 
 from puente.plist.models import Customer, PriceList, PlistSettings, Transaction
 from puente.plist.views import renderPlot
+from puente.pmenu.models import Category, MenuItem
 from primitives import *
 
 class SettingsDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
-        self.setWindowIcon(QIcon('img/16x16/configure.png'))
+        self.setWindowIcon(QIcon('img/32x32/configure.png'))
+        self.setWindowTitle('Settings')
         self.settings = None
         self.c_prices = list()
         self.p_prices = list()
@@ -131,7 +133,8 @@ class PriceBox(QWidget):
 class NewCustomerDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
-        self.setWindowIcon(QIcon('img/16x16/user-group-new.png'))
+        self.setWindowIcon(QIcon('img/32x32/user-group-new.png'))
+        self.setWindowTitle('New Customer')
         self.resize(280,160)
         layout = QFormLayout()
         self.setWindowTitle('New Customer')
@@ -191,7 +194,7 @@ class CustomerDetailsDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
         
-        self.setWindowIcon(QIcon('img/16x16/user-properties.png'))
+        self.setWindowIcon(QIcon('img/32x32/user-properties.png'))
         self.customer = None
         meta_widget = QWidget()
         meta_layout = QVBoxLayout()
@@ -299,6 +302,7 @@ class CustomerDetailsDialog(QDialog):
         self.update(self.customer)
         
     def update(self, customer):
+        self.setWindowTitle(customer.name + ' Details')
         self.empty_fields()
         self.customer = customer
         transactions = Transaction.objects.filter(customer=customer).order_by("time").reverse()
@@ -353,7 +357,8 @@ class CustomerDetailsDialog(QDialog):
 class StatsDialog(QDialog):
     def __init__(self, standalone=True):
         QDialog.__init__(self)
-        self.setWindowIcon(QIcon('img/16x16/view-statistics.png'))
+        self.setWindowIcon(QIcon('img/32x32/view-statistics.png'))
+        self.setWindowTitle('Statistics')
         layout = QVBoxLayout()
         self.canvas_width = 0
         self.canvas_height = 0
@@ -466,3 +471,103 @@ class StatsDialog(QDialog):
     def ok_clicked(self):
         self.hide()
         
+class MenuEditDialog(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+        self.setWindowTitle('Menu Edit')
+        self.setWindowIcon(QIcon('img/32x32/wine.png'))
+        self.resize(600,600)
+        layout = QVBoxLayout()
+        self.add_cat_field = QLineEdit()
+        add_cat_button = QPushButton(QIcon('img/16x16/list-add.png'), 'Add Category')
+        control_widget = QWidget()
+        control_layout = QHBoxLayout()
+        control_layout.addWidget(self.add_cat_field)
+        control_layout.addWidget(add_cat_button)
+        control_widget.setLayout(control_layout)
+        layout.addWidget(control_widget)
+        self.table = MenuTableWidget()
+        layout.addWidget(self.table)
+        button_box = QDialogButtonBox()
+        ok_button = button_box.addButton(button_box.Ok)
+        self.connect(ok_button, SIGNAL('clicked()'), self.ok_clicked)
+        self.connect(add_cat_button, SIGNAL('clicked()'), self.add_cat)
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+    
+    def ok_clicked(self):
+        self.hide()
+    
+    def add_cat(self):
+        name = str(self.add_cat_field.text())
+        if name:
+            new_cat = Category(name=name)
+            new_cat.save()
+            self.table.update()
+            self.add_cat_field.setText('')
+
+        
+class MenuTableWidget(QTableWidget):
+    def __init__(self):
+        QTableWidget.__init__(self)
+        self.setHorizontalHeaderItem(0, QTableWidgetItem('Name'))
+        self.setHorizontalHeaderItem(1, QTableWidgetItem('Price'))
+        self.setHorizontalHeaderItem(2, QTableWidgetItem('Team Price'))
+        self.setSelectionMode(QAbstractItemView.NoSelection)
+        self.setColumnCount(4)
+        self.update()
+    
+    def update(self):
+        cats = Category.objects.all().order_by("name")
+
+        for i in range(self.rowCount()):
+            self.removeRow(0)
+        row_counter = 0
+        for cat in cats:
+            self.insertRow(row_counter)
+            cat_label = QLabel(cat.name)
+            cat_label.setStyleSheet('QLabel { font-weight: bold; }')
+            del_cat_button = DelCategoryButton(cat)
+            self.setCellWidget(row_counter, 0, cat_label)
+            self.setCellWidget(row_counter, 3, del_cat_button)
+            self.connect(del_cat_button, SIGNAL('clicked()'), self.del_category)
+            row_counter += 1
+            self.insertRow(row_counter)
+            add_item_button = AddMenuItemButton(cat)
+            self.setCellWidget(row_counter, 0, add_item_button.name_field)
+            self.setCellWidget(row_counter, 1, add_item_button.price_field)
+            self.setCellWidget(row_counter, 2, add_item_button.p_price_field)
+            self.setCellWidget(row_counter, 3, add_item_button)
+            self.connect(add_item_button, SIGNAL('clicked()'), self.add_item)
+
+            
+            row_counter += 1
+            for item in MenuItem.objects.filter(category=cat, available=True).order_by('name'):
+                self.insertRow(row_counter)
+                self.setCellWidget(row_counter, 0, QLabel(item.name))
+                self.setCellWidget(row_counter, 1, QLabel(str(item.price)))
+                self.setCellWidget(row_counter, 2, QLabel(str(item.pPrice)))
+                del_menu_item_button = DelMenuItemButton(item)
+                self.setCellWidget(row_counter, 3, del_menu_item_button)
+                self.connect(del_menu_item_button, SIGNAL('clicked()'), self.del_item)
+                row_counter += 1
+
+    def add_item(self):
+        sender = self.sender()
+        if sender.name_field.text() and sender.price_field.text() and sender.p_price_field.text():
+            new_item = MenuItem(name=str(sender.name_field.text()), category=sender.cat, price=int(sender.price_field.text()), pPrice=int(sender.p_price_field.text()))
+            new_item.save()
+            self.update()
+            self.emit(SIGNAL('settingsChanged()'))
+         
+    def del_item(self):
+        item = self.sender().menu_item
+        item.delete()
+        self.update()
+        self.emit(SIGNAL('settingsChanged()'))
+    
+    def del_category(self):
+        cat = self.sender().cat
+        cat.delete()
+        self.update()
+        self.emit(SIGNAL('settingsChanged()'))

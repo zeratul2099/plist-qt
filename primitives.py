@@ -134,3 +134,24 @@ class EMailEdit(QLineEdit):
         re.setPattern("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$")
         validator =  QRegExpValidator(re, self)
         self.setValidator(validator)
+        
+class AddMenuItemButton(QPushButton):
+    def __init__(self, cat):
+        QPushButton.__init__(self, QIcon('img/16x16/list-add.png'), 'Add')
+        self.cat = cat
+        self.name_field = QLineEdit()
+        self.price_field = QLineEdit()
+        self.p_price_field = QLineEdit()
+        self.price_field.setValidator(QIntValidator(10,10000, self.price_field))
+        self.p_price_field.setValidator(QIntValidator(10,10000, self.p_price_field))
+        
+class DelMenuItemButton(QPushButton):
+    def __init__(self, menu_item):
+        QPushButton.__init__(self, QIcon('img/16x16/list-remove.png'), 'Del')
+        self.menu_item = menu_item
+        
+       
+class DelCategoryButton(QPushButton):
+    def __init__(self, cat):
+        QPushButton.__init__(self, QIcon('img/16x16/list-remove.png'), 'Del')
+        self.cat = cat
