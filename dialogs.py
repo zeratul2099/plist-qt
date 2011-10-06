@@ -282,7 +282,9 @@ class CustomerDetailsDialog(QDialog):
         form_widget.setSizePolicy(QSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum))
 
         self.stats_image.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
-        meta_layout.addWidget(form_widget)
+        self.stats_image.tabs.insertTab(0, form_widget, QIcon.fromTheme('document-open'), 'Details')
+        self.stats_image.tabs.setCurrentIndex(0)
+        #meta_layout.addWidget(form_widget)
         meta_layout.addWidget(self.stats_image)
         meta_layout.addWidget(button_box)
         meta_layout.setStretchFactor(self.stats_image,5)
@@ -309,7 +311,7 @@ class CustomerDetailsDialog(QDialog):
         transactions = Transaction.objects.filter(customer=customer).order_by("time").reverse()
         self.stats_image.update(transactions)
         if self.stats_image.canvas:
-            self.resize(self.stats_image.canvas.width(), self.stats_image.canvas.height()+300)
+            self.resize(self.stats_image.canvas.width(), self.stats_image.canvas.height()+75)
         
         self.setWindowTitle(customer.name + ' details')
         self.name_field.setText(customer.name)
