@@ -153,10 +153,18 @@ class PlistToolbar(QToolBar):
         show_settings_action = QAction(QIcon('img/16x16/configure.png'), 'Settings', self)
         self.connect(show_settings_action, SIGNAL('triggered()'), self.show_settings)
         self.addAction(show_settings_action)
-        show_mendu_Edit_action = QAction(QIcon('img/16x16/wine.png'), 'Menu', self)
-        self.connect(show_mendu_Edit_action, SIGNAL('triggered()'), self.show_menu_edit)
-        self.addAction(show_mendu_Edit_action)
-    
+        show_menu_Edit_action = QAction(QIcon('img/16x16/wine.png'), 'Menu', self)
+        self.connect(show_menu_Edit_action, SIGNAL('triggered()'), self.show_menu_edit)
+        self.addAction(show_menu_Edit_action)
+        show_about_action = QAction(QIcon.fromTheme('help-about'), 'About', self)
+        self.connect(show_about_action, SIGNAL('triggered()'), self.show_about)
+        #self.addAction(show_about_action)
+        
+    def show_about(self):
+        self.about_dialog = QDialog()
+        QLabel('Plist-QT', parent=self.about_dialog)
+        self.about_dialog.show()
+        
     def show_settings(self):
         main_window = self.parent().parent()
         self.settings_dialog.update(main_window.settings, main_window.prices, main_window.p_prices)

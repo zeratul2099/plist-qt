@@ -26,6 +26,7 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 from puente.plist.models import Customer, PriceList, PlistSettings, Transaction
 from puente.plist.views import renderPlot
 from puente.pmenu.models import Category, MenuItem
+from puente.pmenu.views import renderPdf
 from primitives import *
 
 class SettingsDialog(QDialog):
@@ -480,10 +481,12 @@ class MenuEditDialog(QWidget):
         layout = QVBoxLayout()
         self.add_cat_field = QLineEdit()
         add_cat_button = QPushButton(QIcon.fromTheme('list-add'), 'Add Category')
+        get_pdf_button = QPushButton(QIcon.fromTheme('application-pdf', QIcon.fromTheme('x-office-document')), 'Get Pdf')
         control_widget = QWidget()
         control_layout = QHBoxLayout()
         control_layout.addWidget(self.add_cat_field)
         control_layout.addWidget(add_cat_button)
+        control_layout.addWidget(get_pdf_button)
         control_widget.setLayout(control_layout)
         layout.addWidget(control_widget)
         self.table = MenuTableWidget()
@@ -492,9 +495,15 @@ class MenuEditDialog(QWidget):
         ok_button = button_box.addButton(button_box.Ok)
         self.connect(ok_button, SIGNAL('clicked()'), self.ok_clicked)
         self.connect(add_cat_button, SIGNAL('clicked()'), self.add_cat)
+        self.connect(get_pdf_button, SIGNAL('clicked()'), self.get_pdf)
         layout.addWidget(button_box)
         self.setLayout(layout)
     
+    def get_pdf(self):
+        filename = QFileDialog.getSaveFileName(self, 'Save Menu', '~/', 'Pdf-File (*.pdf)')
+        if filename:
+            with open(filename, 'w') as file:
+                renderPdf(file)
     def ok_clicked(self):
         self.hide()
     
