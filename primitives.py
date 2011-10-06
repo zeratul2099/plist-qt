@@ -90,7 +90,8 @@ class NameLabel(QLabel):
 
 class DeleteButton(QPushButton):
     def __init__(self, customer):
-        QPushButton.__init__(self, QIcon('img/16x16/user-group-delete.png'), '')
+        #QPushButton.__init__(self, QIcon('img/16x16/user-group-delete.png'), '')
+        QPushButton.__init__(self, QIcon.fromTheme('user-group-delete', QIcon.fromTheme('edit-delete')), '')
         self.setToolTip('Delete ' + customer.name)
         self.customer = customer
         self.update(customer)
@@ -119,7 +120,7 @@ class LastPaidLabel(QLabel):
             
 class UndoButton(QPushButton):
     def __init__(self):
-        QPushButton.__init__(self, QIcon('img/16x16/edit-undo.png'), 'Undo')
+        QPushButton.__init__(self, QIcon.fromTheme('edit-undo'), 'Undo')
         self.customer = None
         self.money = None
     def set_undo(self, customer, money):
@@ -137,7 +138,7 @@ class EMailEdit(QLineEdit):
         
 class AddMenuItemButton(QPushButton):
     def __init__(self, cat):
-        QPushButton.__init__(self, QIcon('img/16x16/list-add.png'), 'Add')
+        QPushButton.__init__(self, QIcon.fromTheme('list-add'), 'Add')
         self.cat = cat
         self.name_field = QLineEdit()
         self.price_field = QLineEdit()
@@ -147,11 +148,11 @@ class AddMenuItemButton(QPushButton):
         
 class DelMenuItemButton(QPushButton):
     def __init__(self, menu_item):
-        QPushButton.__init__(self, QIcon('img/16x16/list-remove.png'), 'Del')
+        QPushButton.__init__(self, QIcon.fromTheme('list-remove'), 'Del')
         self.menu_item = menu_item
         
        
 class DelCategoryButton(QPushButton):
     def __init__(self, cat):
-        QPushButton.__init__(self, QIcon('img/16x16/list-remove.png'), 'Del')
+        QPushButton.__init__(self, QIcon.fromTheme('list-remove'), 'Del')
         self.cat = cat
