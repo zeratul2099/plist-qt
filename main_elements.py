@@ -19,8 +19,13 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+import os
+if os.environ.get('QT_API') == 'pyside':
+    from PySide.QtCore import *
+    from PySide.QtGui import *
+else:
+    from PyQt4.QtCore import *
+    from PyQt4.QtGui import *
 
 from primitives import *
 from dialogs import *

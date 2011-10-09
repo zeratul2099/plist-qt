@@ -14,14 +14,22 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, 
 # MA 02110-1301, USA.
 
+import os
+
 from puente.plist.models import Customer, PriceList, PlistSettings, Transaction
 from puente.plist.views import renderPlot
 from puente.pmenu.models import MenuItem
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+if os.environ.get('QT_API') == 'pyside':
+    from PySide.QtCore import *
+    from PySide.QtGui import *
+else:
+    from PyQt4.QtCore import *
+    from PyQt4.QtGui import *
+
 import sys
 from datetime import datetime, timedelta, date
 from decimal import Decimal
+
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg 
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 
@@ -33,6 +41,7 @@ class MainWindow(QWidget):
     
     def __init__(self):
         QWidget.__init__(self)
+        print type(QWidget)
         self.setWindowIcon(QIcon('img/32x32/wallet-open.png'))
         self.setWindowTitle('PList-QT')
         self._update_weekly_sales()
