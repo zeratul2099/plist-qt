@@ -41,7 +41,6 @@ class MainWindow(QWidget):
     
     def __init__(self):
         QWidget.__init__(self)
-        print type(QWidget)
         self.setWindowIcon(QIcon('img/32x32/wallet-open.png'))
         self.setWindowTitle('PList-QT')
         self._update_weekly_sales()
