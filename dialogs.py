@@ -54,6 +54,7 @@ class SettingsDialog(QDialog):
         self.mail_sender = QLineEdit()
         self.mail_server = QLineEdit()
         self.mail_password = QLineEdit()
+        self.mail_password.setEchoMode(QLineEdit.Password)
         form_layout.addRow(QLabel('Limit:'), self.limit_edit)
         form_layout.addRow(QLabel('Teamlimit:'), self.team_limit_edit)
         form_layout.addRow(QLabel('Last Paid Limit (days):'), self.last_paid_limit_edit)
