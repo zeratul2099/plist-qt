@@ -198,6 +198,8 @@ class PlistToolbar(QToolBar):
 
     def show_menu_edit(self):
         self.menu_dialog.show()
+
+
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

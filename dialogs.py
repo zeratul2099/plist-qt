@@ -18,6 +18,10 @@
 #
 from datetime import datetime, timedelta, date
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
+
 if os.environ.get('QT_API') == 'pyside':
     from PySide.QtCore import *
     from PySide.QtGui import *
@@ -47,9 +51,15 @@ class SettingsDialog(QDialog):
         self.limit_edit = QLineEdit()
         self.team_limit_edit = QLineEdit()
         self.last_paid_limit_edit = QLineEdit()
+        self.mail_sender = QLineEdit()
+        self.mail_server = QLineEdit()
+        self.mail_password = QLineEdit()
         form_layout.addRow(QLabel('Limit:'), self.limit_edit)
         form_layout.addRow(QLabel('Teamlimit:'), self.team_limit_edit)
         form_layout.addRow(QLabel('Last Paid Limit (days):'), self.last_paid_limit_edit)
+        form_layout.addRow(QLabel('Email-Sender:'), self.mail_sender)
+        form_layout.addRow(QLabel('Email-Server:'), self.mail_server)
+        form_layout.addRow(QLabel('Email-Password:'), self.mail_password)
         form_widget.setLayout(form_layout)
         
         prices_widget = QWidget()
@@ -84,6 +94,12 @@ class SettingsDialog(QDialog):
         self.limit_edit.setText(str(settings.custLimit))
         self.team_limit_edit.setText(str(settings.teamLimit))
         self.last_paid_limit_edit.setText(str(settings.markLastPaid))
+        if settings.mailSender:
+            self.mail_sender.setText(settings.mailSender)
+        if settings.mailServer:
+            self.mail_server.setText(settings.mailServer)
+        if settings.mailPassword:
+            self.mail_password.setText(settings.mailPassword)
         self.c_price_widget.list.clear()
         self.p_price_widget.list.clear()
         for cp in c_prices:
@@ -95,6 +111,9 @@ class SettingsDialog(QDialog):
         self.settings.custLimit = int(self.limit_edit.text())
         self.settings.teamLimit = int(self.team_limit_edit.text())
         self.settings.markLastPaid = int(self.last_paid_limit_edit.text())
+        self.settings.mailSender = str(self.mail_sender.text())
+        self.settings.mailServer = str(self.mail_server.text())
+        self.settings.mailPassword = str(self.mail_password.text())
         self.settings.save()
         self.emit(SIGNAL('settingsChanged()'))
         
@@ -204,7 +223,7 @@ class CustomerDetailsDialog(QDialog):
         meta_widget = QWidget()
         meta_layout = QVBoxLayout()
         meta_widget.setLayout(meta_layout)
-        
+        self.msg_box = QMessageBox()
         form_layout = QFormLayout()
         form_layout.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
         self.stacks = list()
@@ -269,8 +288,9 @@ class CustomerDetailsDialog(QDialog):
         save_button = QPushButton(QIcon.fromTheme('document-save'), 'Save')
         self.button_stack.addWidget(edit_button)
         self.button_stack.addWidget(save_button)
-        form_layout.addRow(QLabel('Edit:'), button_container)
-        
+        mail_button = QPushButton(QIcon.fromTheme('mail-send'), 'Send Notification Mail')
+        form_layout.addRow('Edit:', button_container)
+        form_layout.addRow('Inform:', mail_button)
         self.stats_image = StatsDialog(False)
 
         button_box = QDialogButtonBox()
@@ -278,6 +298,7 @@ class CustomerDetailsDialog(QDialog):
         ok_button = button_box.addButton(button_box.Ok)
         self.connect(edit_button, SIGNAL('clicked()'), self.show_edit_fields)
         self.connect(save_button, SIGNAL('clicked()'), self.save_edit)
+        self.connect(mail_button, SIGNAL('clicked()'), self.send_email)
         self.connect(ok_button, SIGNAL('clicked()'), self.ok_clicked)
         
         
@@ -294,9 +315,11 @@ class CustomerDetailsDialog(QDialog):
         meta_layout.setStretchFactor(self.stats_image,5)
         #
         self.setLayout(meta_layout)
+        
     def show_edit_fields(self):
         for stack in self.stacks:
             stack.setCurrentIndex(1)
+            
     def save_edit(self):
         self.customer.name = unicode(self.name_edit_field.text())
         self.customer.email = self.email_edit_field.text()
@@ -361,6 +384,57 @@ class CustomerDetailsDialog(QDialog):
         self.comment_field.setText('')
         self.comment_edit_field.setText('')
 
+    def send_email(self):
+            # construct mail ...
+        settings = PlistSettings.objects.all()[0]
+        fr = settings.mailSender
+        
+        to = self.customer.email
+
+        text = "Hallo "
+        text += "%s" %(self.customer.name)
+        text += ",\n\n"
+        text += u"du hast in der Pünte %.2f Euro Schulden.\n" %(self.customer.depts)
+        text += u"Bitte bezahle diese bei deinem nächsten Besuch.\n"
+        text += u"Viele Grüße, dein Püntenteam"
+        # comment these two lines out to remove signature from mail
+        #command = u"echo '%s' | gpg2 --clearsign --passphrase %s --batch -u 'Pünte OSS' --yes -o -"%(text, config.PASSPHRASE)
+        #text = os.popen(command.encode('utf-8')).read()
+        #msg = Message()
+        msg = MIMEText(text, 'plain', _charset='UTF-8')
+        #msg.set_payload(text)
+        msg["Subject"] = Header("[Pünte]Zahlungserinnerung", 'utf8')
+        fromhdr = Header(u"Pünte", 'utf8')
+        fromhdr.append(u"<%s>"%fr, 'ascii')
+        msg["From"] = fromhdr
+        tohdr = Header("%s"%self.customer.name, 'utf8')
+        tohdr.append("<%s>" %( self.customer.email), 'ascii')
+        msg["To"] = tohdr
+        date = datetime.now()
+        msg["Date"] = date.strftime("%a, %d %b %Y %H:%M:%S")
+        # ... and try to send it
+        #
+        print 'connecting...'
+        server = str(settings.mailServer.partition(':')[0])
+        port = int(settings.mailServer.partition(':')[2])
+        print server, port
+        try:
+            s = smtplib.SMTP(server, port)
+            s.ehlo()
+            s.starttls()
+            print 'logging in...'
+            s.login(fr, str(settings.mailPassword))
+            print 'sending...'
+            s.sendmail(fr, self.customer.email, msg.as_string())
+            self.msg_box.setText("Erinnerungsmail an %s verschickt" %(self.customer.name))
+            s.quit()
+            print 'connection terminated'
+        except Exception, e:
+            print e
+            s.quit()
+            self.msg_box.setText("Fehler beim Versenden")
+        self.msg_box.show()
+        
 class StatsDialog(QDialog):
     def __init__(self, standalone=True):
         QDialog.__init__(self)
