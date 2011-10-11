@@ -34,7 +34,9 @@ class CustomerListBlockWidget(QWidget):
     def __init__(self, customers, prices, headline, settings, product_dict={}):
         QWidget.__init__(self)
         layout = QVBoxLayout()
-        layout.addWidget(QLabel(headline))
+        headline_widget = QLabel(headline)
+        headline_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        layout.addWidget(headline_widget)
         self.product_dict = product_dict
         self.table = CustomerTableWidget(customers, prices, settings, self, product_dict=product_dict)
         layout.addWidget(self.table)
@@ -70,6 +72,7 @@ class CustomerListBlockWidget(QWidget):
 class CustomerListFooter(QWidget):
     def __init__(self, customers):
         QWidget.__init__(self)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         layout = QHBoxLayout()
         self.left_widget = QWidget()
         self.middle_widget = QWidget()

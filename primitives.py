@@ -160,3 +160,15 @@ class DelCategoryButton(QPushButton):
     def __init__(self, cat):
         QPushButton.__init__(self, QIcon.fromTheme('list-remove'), 'Del')
         self.cat = cat
+
+class ConfirmationDialog(QDialog):
+    def __init__(self, text):
+        QDialog.__init__(self)
+        self.setWindowTitle('Confirmation')
+        self.setWindowIcon(QIcon.fromTheme('dialog-warning'))
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel(text))
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+        layout.addWidget(self.button_box)
+        self.setLayout(layout)
+        

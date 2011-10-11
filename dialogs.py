@@ -225,6 +225,8 @@ class CustomerDetailsDialog(QDialog):
         meta_layout = QVBoxLayout()
         meta_widget.setLayout(meta_layout)
         self.msg_box = QMessageBox()
+        self.msg_box.setWindowTitle('Message')
+        self.msg_box.setWindowIcon(QIcon.fromTheme('dialog-information'))
         form_layout = QFormLayout()
         form_layout.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
         self.stacks = list()
@@ -287,11 +289,16 @@ class CustomerDetailsDialog(QDialog):
         form_layout.addRow(QLabel('Comment:'), self.comment_stack)
         edit_button = QPushButton(QIcon('img/16x16/configure.png'), 'Edit')
         save_button = QPushButton(QIcon.fromTheme('document-save'), 'Save')
+        self.button_stack.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        #edit_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        #save_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.button_stack.addWidget(edit_button)
         self.button_stack.addWidget(save_button)
-        mail_button = QPushButton(QIcon.fromTheme('mail-send'), 'Send Notification Mail')
-        form_layout.addRow('Edit:', button_container)
-        form_layout.addRow('Inform:', mail_button)
+        mail_button = QCommandLinkButton('Notification Mail', 'Send Email')
+        mail_button.setIcon(QIcon.fromTheme('mail-send'))
+
+        mail_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        form_layout.addRow(button_container)
         self.stats_image = StatsDialog(False)
 
         button_box = QDialogButtonBox()
@@ -306,9 +313,18 @@ class CustomerDetailsDialog(QDialog):
         form_widget = QWidget()
         form_widget.setLayout(form_layout)
         form_widget.setSizePolicy(QSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum))
-
+        details_widget = QWidget()
+        details_layout = QHBoxLayout()
+        details_widget.setLayout(details_layout)
+        mail_widget = QWidget()
+        mail_layout = QVBoxLayout()
+        mail_widget.setLayout(mail_layout)
+        mail_layout.addWidget(mail_button)
+        mail_layout.addStretch()
+        details_layout.addWidget(form_widget)
+        details_layout.addWidget(mail_widget)
         self.stats_image.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
-        self.stats_image.tabs.insertTab(0, form_widget, QIcon.fromTheme('document-open'), 'Details')
+        self.stats_image.tabs.insertTab(0, details_widget, QIcon.fromTheme('document-open'), 'Details')
         self.stats_image.tabs.setCurrentIndex(0)
         #meta_layout.addWidget(form_widget)
         meta_layout.addWidget(self.stats_image)
@@ -386,54 +402,68 @@ class CustomerDetailsDialog(QDialog):
         self.comment_edit_field.setText('')
 
     def send_email(self):
-            # construct mail ...
-        settings = PlistSettings.objects.all()[0]
-        fr = settings.mailSender
-        
-        to = self.customer.email
+        self.confirm_dialog = ConfirmationDialog('Really send Email to ' + self.customer.name + '?')
+        self.confirm_dialog.setModal(True)
+        self.connect(self.confirm_dialog.button_box, SIGNAL('rejected()'), self.confirm_dialog.hide)
+        self.connect(self.confirm_dialog.button_box, SIGNAL('accepted()'), self.send_email_confirmed)
+        self.confirm_dialog.show()
 
-        text = "Hallo "
-        text += "%s" %(self.customer.name)
-        text += ",\n\n"
-        text += u"du hast in der Pünte %.2f Euro Schulden.\n" %(self.customer.depts)
-        text += u"Bitte bezahle diese bei deinem nächsten Besuch.\n"
-        text += u"Viele Grüße, dein Püntenteam"
-        # comment these two lines out to remove signature from mail
-        #command = u"echo '%s' | gpg2 --clearsign --passphrase %s --batch -u 'Pünte OSS' --yes -o -"%(text, config.PASSPHRASE)
-        #text = os.popen(command.encode('utf-8')).read()
-        #msg = Message()
-        msg = MIMEText(text, 'plain', _charset='UTF-8')
-        #msg.set_payload(text)
-        msg["Subject"] = Header("[Pünte]Zahlungserinnerung", 'utf8')
-        fromhdr = Header(u"Pünte", 'utf8')
-        fromhdr.append(u"<%s>"%fr, 'ascii')
-        msg["From"] = fromhdr
-        tohdr = Header("%s"%self.customer.name, 'utf8')
-        tohdr.append("<%s>" %( self.customer.email), 'ascii')
-        msg["To"] = tohdr
-        date = datetime.now()
-        msg["Date"] = date.strftime("%a, %d %b %Y %H:%M:%S")
-        # ... and try to send it
-        #
-        print 'connecting...'
-        server = str(settings.mailServer.partition(':')[0])
-        port = int(settings.mailServer.partition(':')[2])
-        print server, port
+        
+    def send_email_confirmed(self):
+            # construct mail ...
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
         try:
-            s = smtplib.SMTP(server, port)
-            s.ehlo()
-            s.starttls()
-            print 'logging in...'
-            s.login(fr, str(settings.mailPassword))
-            print 'sending...'
-            s.sendmail(fr, self.customer.email, msg.as_string())
-            self.msg_box.setText("Erinnerungsmail an %s verschickt" %(self.customer.name))
-            s.quit()
-            print 'connection terminated'
-        except Exception, e:
-            print e
-            s.quit()
-            self.msg_box.setText("Fehler beim Versenden")
+        
+            settings = PlistSettings.objects.all()[0]
+            fr = settings.mailSender
+            
+            to = self.customer.email
+
+            text = "Hallo "
+            text += "%s" %(self.customer.name)
+            text += ",\n\n"
+            text += u"du hast in der Pünte %.2f Euro Schulden.\n" %(self.customer.depts)
+            text += u"Bitte bezahle diese bei deinem nächsten Besuch.\n"
+            text += u"Viele Grüße, dein Püntenteam"
+            # comment these two lines out to remove signature from mail
+            #command = u"echo '%s' | gpg2 --clearsign --passphrase %s --batch -u 'Pünte OSS' --yes -o -"%(text, config.PASSPHRASE)
+            #text = os.popen(command.encode('utf-8')).read()
+            #msg = Message()
+            msg = MIMEText(text, 'plain', _charset='UTF-8')
+            #msg.set_payload(text)
+            msg["Subject"] = Header("[Pünte]Zahlungserinnerung", 'utf8')
+            fromhdr = Header(u"Pünte", 'utf8')
+            fromhdr.append(u"<%s>"%fr, 'ascii')
+            msg["From"] = fromhdr
+            tohdr = Header("%s"%self.customer.name, 'utf8')
+            tohdr.append("<%s>" %( self.customer.email), 'ascii')
+            msg["To"] = tohdr
+            date = datetime.now()
+            msg["Date"] = date.strftime("%a, %d %b %Y %H:%M:%S")
+            # ... and try to send it
+            #
+            print 'connecting...'
+            server = str(settings.mailServer.partition(':')[0])
+            port = int(settings.mailServer.partition(':')[2])
+            print server, port
+            try:
+                s = smtplib.SMTP(server, port)
+                s.ehlo()
+                s.starttls()
+                print 'logging in...'
+                s.login(fr, str(settings.mailPassword))
+                print 'sending...'
+                s.sendmail(fr, self.customer.email, msg.as_string())
+                self.msg_box.setText("Erinnerungsmail an %s verschickt" %(self.customer.name))
+                s.quit()
+                print 'connection terminated'
+            except Exception, e:
+                print e
+                s.quit()
+                self.msg_box.setText("Fehler beim Versenden")
+        finally:
+            self.confirm_dialog.hide()
+            QApplication.restoreOverrideCursor()
         self.msg_box.show()
         
 class StatsDialog(QDialog):
