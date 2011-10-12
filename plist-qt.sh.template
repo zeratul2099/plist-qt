@@ -1,8 +1,11 @@
-#!/bin/sh
+#!/bin/bash
+source ~/code/venv/bin/activate
 if [ $1 = 'pyside' ]; then
     export QT_API=pyside;
 else
     export QT_API=pyqt;
 fi;
 export DJANGO_SETTINGS_MODULE=puente.settings
+cd ~/code/plist-qt/
 python listview.py
+

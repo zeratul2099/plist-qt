@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Plist-QT
+Name[de_DE]=Plist-QT
+Comment=QT-Gui for Plist
+Exec=/<path>/plist-qt/plist-qt.sh
+Terminal=false
+X-MultipleArgs=false
+Type=Application
+Icon=wallet-open.png
+StartupNotify=true
+StartupWMClass=RemoteServers
