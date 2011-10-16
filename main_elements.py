@@ -139,7 +139,7 @@ class CustomerTableWidget(QTableWidget):
         self.hide()
         self.resizeColumnToContents(0)
         self.show()
-        #self.setColumnWidth(0, self.columnWidth(0)+10)
+        self.setColumnWidth(0, self.columnWidth(0)+10)
         
     def show_details(self):
         self.frame.details_dialog.update(self.sender().customer)
