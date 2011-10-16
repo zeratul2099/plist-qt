@@ -40,7 +40,7 @@ class DeptLabel(QLabel):
             self.update(customer)
     
     def update(self, customer):
-        self.setText(str(customer.depts)+' EUR')
+        self.setText(str(customer.depts) + u' \u20AC')
         if customer.dept_status == -1 or customer.id == 1:
             self.setStyleSheet('QLabel { color : green; }')
         elif customer.dept_status == 1:
@@ -52,7 +52,11 @@ class DeptLabel(QLabel):
             
 class BuyButton(QPushButton):
     def __init__(self, price, customer, products=None):
-        QPushButton.__init__(self, QIcon('img/16x16/help-donate.png'), str(price.price)+' ct')
+        if price.price >= 0:
+            price_label = '%.2f'%(price.price/100.0) +  u' \u20AC'
+        else:
+            price_label = str(price.price)+' ct'
+        QPushButton.__init__(self, QIcon('img/16x16/help-donate.png'), price_label)
         self.customer = customer
         self.price = price
         self.update(customer, products)
@@ -145,20 +149,23 @@ class AddMenuItemButton(QPushButton):
         QPushButton.__init__(self, QIcon.fromTheme('list-add'), 'Add')
         self.cat = cat
         self.name_field = QLineEdit()
+        self.name_field.setPlaceholderText('Name')
         self.price_field = QLineEdit()
+        self.price_field.setPlaceholderText(u'Price (\u20AC)')
         self.p_price_field = QLineEdit()
-        self.price_field.setValidator(QIntValidator(10,10000, self.price_field))
-        self.p_price_field.setValidator(QIntValidator(10,10000, self.p_price_field))
+        self.p_price_field.setPlaceholderText(u'Team Price (\u20AC)')
+        self.price_field.setValidator(QDoubleValidator(0.1, 10000.0, 2, self.price_field))
+        self.p_price_field.setValidator(QDoubleValidator(0.1, 10000.0, 2, self.p_price_field))
         
 class DelMenuItemButton(QPushButton):
     def __init__(self, menu_item):
-        QPushButton.__init__(self, QIcon.fromTheme('list-remove'), 'Del')
+        QPushButton.__init__(self, QIcon.fromTheme('list-remove'), 'Delete')
         self.menu_item = menu_item
         
        
 class DelCategoryButton(QPushButton):
     def __init__(self, cat):
-        QPushButton.__init__(self, QIcon.fromTheme('list-remove'), 'Del')
+        QPushButton.__init__(self, QIcon.fromTheme('list-remove'), 'Delete')
         self.cat = cat
 
 class ConfirmationDialog(QDialog):

@@ -97,8 +97,8 @@ class CustomerListFooter(QWidget):
         self.setLayout(layout)
         
     def update(self, customers):
-        self.sum_widget.setText(str(reduce(lambda x, y: x + y, map(lambda x: x.depts,customers)))+' EUR')
-        self.weekly_sales_widget.setText(str(reduce(lambda x, y: x + y, map(lambda x: x.weeklySales,customers)))+' EUR')
+        self.sum_widget.setText(str(reduce(lambda x, y: x + y, map(lambda x: x.depts,customers))) + u' \u20AC')
+        self.weekly_sales_widget.setText(str(reduce(lambda x, y: x + y, map(lambda x: x.weeklySales,customers))) + u' \u20AC')
  
 class CustomerTableWidget(QTableWidget):
     
@@ -124,13 +124,6 @@ class CustomerTableWidget(QTableWidget):
         self.setColumnWidth(1, 30)
         self.setColumnWidth(6+len(prices), 30)
         self.horizontalHeader().hide()
-        #self.setHorizontalHeaderItem(0, QTableWidgetItem('Name'))
-        #self.setHorizontalHeaderItem(1, QTableWidgetItem('Edit'))
-        #self.setHorizontalHeaderItem(2, QTableWidgetItem('Depts'))
-        #self.setHorizontalHeaderItem(3, QTableWidgetItem('Buy'))
-        #self.setHorizontalHeaderItem(3+len(prices), QTableWidgetItem('Pay'))
-        #self.setHorizontalHeaderItem(5+len(prices), QTableWidgetItem('Last Paid'))
-        #self.setHorizontalHeaderItem(6+len(prices), QTableWidgetItem('Del'))
         for i, c in enumerate(customers):
             self.insertRow(0)
             table_row = TableRow(c, self.prices, self.settings, product_dict)
@@ -143,7 +136,11 @@ class CustomerTableWidget(QTableWidget):
                 self.setCellWidget(0, col, item)
             
             self.row_dict[c.name] = table_row
-    
+        self.hide()
+        self.resizeColumnToContents(0)
+        self.show()
+        #self.setColumnWidth(0, self.columnWidth(0)+10)
+        
     def show_details(self):
         self.frame.details_dialog.update(self.sender().customer)
         self.frame.details_dialog.show()

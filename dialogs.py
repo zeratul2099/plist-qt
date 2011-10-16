@@ -104,9 +104,9 @@ class SettingsDialog(QDialog):
         self.c_price_widget.list.clear()
         self.p_price_widget.list.clear()
         for cp in c_prices:
-            self.c_price_widget.list.addItem(str(cp.price)+' ct')
+            self.c_price_widget.list.addItem('%.2f'%(cp.price/100.0)+u' \u20AC')
         for pp in p_prices:
-            self.p_price_widget.list.addItem(str(pp.price)+' ct')
+            self.p_price_widget.list.addItem('%.2f'%(pp.price/100.0)+u' \u20AC')
             
     def save_clicked(self):
         self.settings.custLimit = int(self.limit_edit.text())
@@ -137,11 +137,12 @@ class PriceBox(QWidget):
         button_layout = QHBoxLayout()
         self.add_button = QPushButton(QIcon.fromTheme('list-add'), 'Add')
         self.del_button = QPushButton(QIcon.fromTheme('list-remove'), 'Del')
-        #self.connect(self.add_button, SIGNAL('clicked()'), self.add_price)
         self.connect(self.del_button, SIGNAL('clicked()'), self.del_price)
         button_layout.addWidget(self.add_button)
         button_layout.addWidget(self.del_button)
         self.new_price_field = QLineEdit()
+        self.new_price_field.setPlaceholderText(u'Price in \u20AC')
+        self.new_price_field.setValidator(QDoubleValidator(0.0,100.0,2, self.new_price_field))
         layout.addWidget(self.new_price_field)
         button_widget.setLayout(button_layout)
         layout.addWidget(button_widget)
@@ -361,7 +362,7 @@ class CustomerDetailsDialog(QDialog):
         self.name_field.setText(customer.name)
         self.name_edit_field.setText(customer.name)
         self.depts_field.update(customer)
-        self.weekly_sales_field.setText(str(customer.weeklySales) + ' EUR')
+        self.weekly_sales_field.setText(str(customer.weeklySales) + u' \u20AC')
         self.sales_since_field.setText(customer.salesSince.strftime('%d.%m.%Y'))
         self.email_field.setText(customer.email)
         self.email_edit_field.setText(customer.email)
@@ -556,7 +557,7 @@ class StatsDialog(QDialog):
         for idx, transaction in enumerate(transactions[self.page*self.len_page:(self.page+1)*self.len_page]):
             self.list_widget.insertRow(idx)
             self.list_widget.setCellWidget(idx, 0, QLabel(transaction.customer.name))
-            self.list_widget.setCellWidget(idx, 1, QLabel(str(transaction.price) + ' EUR'))
+            self.list_widget.setCellWidget(idx, 1, QLabel(str(transaction.price) + u' \u20AC'))
             self.list_widget.setCellWidget(idx, 2, QLabel(transaction.time.strftime('%H:%M:%S, %d.%m.%Y')))
 
             
@@ -611,7 +612,7 @@ class MenuEditDialog(QWidget):
         self.setLayout(layout)
     
     def get_pdf(self):
-        filename = QFileDialog.getSaveFileName(self, 'Save Menu', '~/', 'Pdf-File (*.pdf)')
+        filename = QFileDialog.getSaveFileName(self, 'Save Menu', '~/menu.pdf', 'Pdf-File (*.pdf)')
         if filename:
             with open(filename, 'w') as file:
                 renderPdf(file)
@@ -630,11 +631,15 @@ class MenuEditDialog(QWidget):
 class MenuTableWidget(QTableWidget):
     def __init__(self):
         QTableWidget.__init__(self)
+        self.horizontalHeader().hide()
+        self.verticalHeader().hide()
+        self.setColumnCount(4)
         self.setHorizontalHeaderItem(0, QTableWidgetItem('Name'))
         self.setHorizontalHeaderItem(1, QTableWidgetItem('Price'))
         self.setHorizontalHeaderItem(2, QTableWidgetItem('Team Price'))
+        self.setHorizontalHeaderItem(3, QTableWidgetItem('Add / Delete'))
         self.setSelectionMode(QAbstractItemView.NoSelection)
-        self.setColumnCount(4)
+        
         self.update()
     
     def update(self):
@@ -665,8 +670,8 @@ class MenuTableWidget(QTableWidget):
             for item in MenuItem.objects.filter(category=cat, available=True).order_by('name'):
                 self.insertRow(row_counter)
                 self.setCellWidget(row_counter, 0, QLabel(item.name))
-                self.setCellWidget(row_counter, 1, QLabel(str(item.price)))
-                self.setCellWidget(row_counter, 2, QLabel(str(item.pPrice)))
+                self.setCellWidget(row_counter, 1, QLabel(u'%.2f \u20AC'%(item.price/100.0)))
+                self.setCellWidget(row_counter, 2, QLabel(u'%.2f \u20AC'%(item.pPrice/100.0)))
                 del_menu_item_button = DelMenuItemButton(item)
                 self.setCellWidget(row_counter, 3, del_menu_item_button)
                 self.connect(del_menu_item_button, SIGNAL('clicked()'), self.del_item)
@@ -675,7 +680,7 @@ class MenuTableWidget(QTableWidget):
     def add_item(self):
         sender = self.sender()
         if sender.name_field.text() and sender.price_field.text() and sender.p_price_field.text():
-            new_item = MenuItem(name=str(sender.name_field.text()), category=sender.cat, price=int(sender.price_field.text()), pPrice=int(sender.p_price_field.text()))
+            new_item = MenuItem(name=str(sender.name_field.text()), category=sender.cat, price=float(sender.price_field.text().replace(',','.'))*100, pPrice=float(sender.p_price_field.text().replace(',','.'))*100)
             new_item.save()
             self.update()
             self.emit(SIGNAL('settingsChanged()'))

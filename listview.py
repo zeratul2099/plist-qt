@@ -82,13 +82,16 @@ class MainWindow(QWidget):
         splitter.addWidget(self.customer_box)
         layout.addWidget(splitter)
         self.center_widget.setLayout(layout)
+        
     def add_price(self):
         if self.sender() is self.toolbar.settings_dialog.c_price_widget.add_button:
             is_puente = False
-            num = self.toolbar.settings_dialog.c_price_widget.new_price_field.text()
+            num = float(self.toolbar.settings_dialog.c_price_widget.new_price_field.text().replace(',','.'))*100
+            self.toolbar.settings_dialog.c_price_widget.new_price_field.setText('')
         elif self.sender() is self.toolbar.settings_dialog.p_price_widget.add_button:
             is_puente = True
-            num = self.toolbar.settings_dialog.p_price_widget.new_price_field.text()
+            num = float(self.toolbar.settings_dialog.p_price_widget.new_price_field.text().replace(',','.'))*100
+            self.toolbar.settings_dialog.p_price_widget.new_price_field.setText('')
         else:
             return
         price = PriceList(price=num, isPuente=is_puente, settings=self.settings)
@@ -108,7 +111,7 @@ class MainWindow(QWidget):
         self._get_menu_item_dict()
         self.p_men_box.update(self.p_men, self.p_prices, self.settings, self.p_menu_items)
         self.customer_box.update(self.customers, self.prices, self.settings, self.c_menu_items)
-        self.p_men_box.table.adjustSize()
+        #self.p_men_box.table.adjustSize()
         
     def settings_changed(self):
         self.update()
